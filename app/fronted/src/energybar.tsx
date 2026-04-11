@@ -72,4 +72,4 @@ const styles = StyleSheet.create({
     minWidth: 20,
     textAlign: 'center',
   },
-});
+}); 
