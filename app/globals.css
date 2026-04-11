@@ -1,14 +1,18 @@
 :root {
-  --bg: #09131f;
-  --bg-soft: #102235;
-  --panel: rgba(9, 19, 31, 0.78);
-  --panel-border: rgba(255, 255, 255, 0.08);
-  --text: #f5f1e8;
-  --muted: #b9c6d3;
-  --gold: #f2b544;
-  --gold-strong: #ffcf70;
-  --sea: #4bc4d6;
-  --shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  --bg: #07111d;
+  --bg-soft: #0f2138;
+  --bg-deep: #03070d;
+  --panel: rgba(10, 19, 34, 0.8);
+  --panel-border: rgba(255, 255, 255, 0.09);
+  --text: #fff6df;
+  --muted: #c6d2de;
+  --gold: #f5b83d;
+  --gold-strong: #ffd67f;
+  --orange: #ff8643;
+  --sea: #3ec6db;
+  --red: #ff5d5d;
+  --blue: #5dc0ff;
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
 }
 
 * {
@@ -25,8 +29,9 @@ body {
   color: var(--text);
   font-family: Georgia, 'Times New Roman', serif;
   background:
-    radial-gradient(circle at top, rgba(75, 196, 214, 0.22), transparent 30%),
-    linear-gradient(180deg, #143454 0%, var(--bg) 55%, #050b12 100%);
+    radial-gradient(circle at 20% 0%, rgba(255, 184, 61, 0.2), transparent 25%),
+    radial-gradient(circle at 80% 10%, rgba(62, 198, 219, 0.18), transparent 28%),
+    linear-gradient(180deg, #13345a 0%, var(--bg) 52%, var(--bg-deep) 100%);
 }
 
 a {
@@ -42,7 +47,8 @@ a {
 
 .hero,
 .status-layout,
-.feature-grid {
+.feature-grid,
+.cards-grid {
   display: grid;
   gap: 24px;
 }
@@ -51,6 +57,11 @@ a {
   grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
   align-items: center;
   min-height: 82vh;
+}
+
+.hero-showcase {
+  display: grid;
+  gap: 18px;
 }
 
 .eyebrow {
@@ -80,6 +91,22 @@ a {
   font-size: 1.08rem;
   line-height: 1.7;
   margin: 24px 0 0;
+}
+
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.pill-row span {
+  padding: 10px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--gold-strong);
+  font-size: 0.9rem;
 }
 
 .hero-actions {
@@ -115,7 +142,9 @@ a {
 .hero-card,
 .panel,
 .feature-card,
-.status-card {
+.status-card,
+.battle-card,
+.game-card {
   border: 1px solid var(--panel-border);
   background: var(--panel);
   backdrop-filter: blur(14px);
@@ -135,6 +164,82 @@ a {
   background: rgba(242, 181, 68, 0.16);
   color: var(--gold-strong);
   font-size: 0.9rem;
+}
+
+.battle-card {
+  border-radius: 28px;
+  padding: 24px;
+}
+
+.battle-card-main {
+  background:
+    linear-gradient(180deg, rgba(255, 184, 61, 0.12), rgba(255, 255, 255, 0.02)),
+    var(--panel);
+}
+
+.battle-card-side {
+  background:
+    linear-gradient(180deg, rgba(62, 198, 219, 0.16), rgba(255, 255, 255, 0.02)),
+    var(--panel);
+}
+
+.card-label {
+  margin: 0 0 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--gold-strong);
+  font-size: 0.75rem;
+}
+
+.versus-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.versus-row div {
+  display: grid;
+  gap: 4px;
+}
+
+.versus-row strong,
+.battle-card-side strong {
+  font-size: 1.2rem;
+}
+
+.versus-row span,
+.battle-card-side span,
+.battle-card-side em,
+.energy-copy {
+  color: var(--muted);
+  font-style: normal;
+}
+
+.versus-row b {
+  color: var(--orange);
+  font-size: 1.5rem;
+}
+
+.tower-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 20px 0 14px;
+}
+
+.tower {
+  height: 66px;
+  border-radius: 18px;
+  display: block;
+}
+
+.tower.blue {
+  background: linear-gradient(180deg, var(--blue), #276ca5);
+}
+
+.tower.red {
+  background: linear-gradient(180deg, #ff8b69, var(--red));
 }
 
 .stat-grid {
@@ -176,8 +281,14 @@ a {
   margin-top: 24px;
 }
 
+.cards-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 24px;
+}
+
 .feature-card,
-.status-card {
+.status-card,
+.game-card {
   border-radius: 22px;
   padding: 22px;
 }
@@ -191,6 +302,47 @@ a {
 .feature-card p {
   margin: 0;
   line-height: 1.7;
+}
+
+.game-card {
+  background:
+    linear-gradient(180deg, rgba(255, 184, 61, 0.14), rgba(255, 255, 255, 0.03)),
+    var(--panel);
+}
+
+.game-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.mana-cost,
+.rarity-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+
+.mana-cost {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(180deg, var(--sea), #21608b);
+  color: #04111b;
+  font-weight: 800;
+}
+
+.rarity-pill {
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--gold-strong);
+  font-size: 0.8rem;
+}
+
+.game-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
 }
 
 .status-layout {
@@ -207,7 +359,8 @@ a {
 @media (max-width: 900px) {
   .hero,
   .feature-grid,
-  .status-layout {
+  .status-layout,
+  .cards-grid {
     grid-template-columns: 1fr;
   }
 

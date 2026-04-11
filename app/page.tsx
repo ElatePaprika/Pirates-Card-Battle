@@ -1,22 +1,30 @@
-const features = [
+const highlights = [
   {
-    title: 'Batallas rapidas',
-    text: 'Partidas directas con ritmo agil para enfrentar mazos rivales y subir en la clasificacion.',
+    title: 'Batallas 1v1 en tiempo real',
+    text: 'Entra a la arena, tira tus cartas en el momento justo y rompe las torres rivales antes de que te derriben a ti.',
   },
   {
-    title: 'Coleccion de cartas',
-    text: 'Construye tu deck con unidades, torres y estrategias pensadas para dominar el mar.',
+    title: 'Mazos de 8 cartas',
+    text: 'Mezcla capitanes, unidades, habilidades y estructuras para montar combinaciones agresivas, de control o de contraataque.',
   },
   {
-    title: 'Progresion pirata',
-    text: 'Consigue monedas, trofeos y mejoras para hacer crecer tu perfil capitan.',
+    title: 'Coleccion y tienda',
+    text: 'Consigue nuevas cartas, mejora tu coleccion y refuerza tu estrategia con recompensas, monedas y compras dentro del juego.',
   },
 ]
 
-const roadmap = [
-  'Autenticacion de jugadores y perfiles persistentes.',
-  'Sistema de tienda para ampliar la coleccion.',
-  'Ranking con mejores capitanes y recompensas.',
+const cards = [
+  { name: 'Captain Rush', type: 'Ataque', cost: '4', rarity: 'Epica' },
+  { name: 'Sea King Guard', type: 'Defensa', cost: '5', rarity: 'Legendaria' },
+  { name: 'Gum Storm', type: 'Hechizo', cost: '3', rarity: 'Rara' },
+  { name: 'Sniper Tower', type: 'Estructura', cost: '6', rarity: 'Comun' },
+]
+
+const pillars = [
+  'Sube trofeos ganando duelos rapidos.',
+  'Edita tu deck y ajusta tu estilo de juego.',
+  'Crea salas privadas para jugar con amigos.',
+  'Escala el ranking de los mejores piratas.',
 ]
 
 export default function HomePage() {
@@ -25,76 +33,118 @@ export default function HomePage() {
       <section className="hero">
         <div className="hero-copy">
           <p className="eyebrow">Pirates Card Battle</p>
-          <h1>Una base web estable para que tu proyecto se vea bien en Vercel.</h1>
+          <h1>El choque de mazos pirata que lleva la energia de la arena al Grand Line.</h1>
           <p className="lead">
-            Esta version publica presenta el juego como experiencia web mientras el codigo
-            movil y del backend permanecen dentro del repositorio para seguir desarrollandolos.
+            Un juego competitivo inspirado en el ritmo de Clash Royale, con identidad anime y
+            sabor de tripulaciones, poderes y combates navales. Construye tu mazo, domina la
+            energia y aplasta las torres enemigas.
           </p>
+
           <div className="hero-actions">
-            <a className="primary-link" href="#features">
-              Ver caracteristicas
+            <a className="primary-link" href="#arena">
+              Entrar a la arena
             </a>
-            <a className="secondary-link" href="#status">
-              Estado del proyecto
+            <a className="secondary-link" href="#deck">
+              Ver el deck
             </a>
+          </div>
+
+          <div className="pill-row">
+            <span>1v1</span>
+            <span>Tiempo real</span>
+            <span>Deck de 8</span>
+            <span>Ranking</span>
           </div>
         </div>
 
-        <div className="hero-card">
-          <span className="hero-badge">Deck del Capitan</span>
-          <div className="stat-grid">
-            <article>
-              <strong>3</strong>
-              <span>Modulos base</span>
-            </article>
-            <article>
-              <strong>Web</strong>
-              <span>Lista para deploy</span>
-            </article>
-            <article>
-              <strong>Next.js</strong>
-              <span>Export estatico</span>
-            </article>
+        <div className="hero-showcase">
+          <div className="battle-card battle-card-main">
+            <p className="card-label">Arena Match</p>
+            <div className="versus-row">
+              <div>
+                <strong>Player</strong>
+                <span>1178 trofeos</span>
+              </div>
+              <b>VS</b>
+              <div>
+                <strong>Yonko Bot</strong>
+                <span>1204 trofeos</span>
+              </div>
+            </div>
+            <div className="tower-bar">
+              <span className="tower blue" />
+              <span className="tower blue" />
+              <span className="tower red" />
+              <span className="tower red" />
+            </div>
+            <p className="energy-copy">Energia lista. Juega una carta y lanza el push final.</p>
+          </div>
+
+          <div className="battle-card battle-card-side">
+            <p className="card-label">Tienda</p>
+            <strong>Oferta destacada</strong>
+            <span>Sea King Guard</span>
+            <em>600 monedas</em>
           </div>
         </div>
       </section>
 
-      <section className="panel" id="features">
+      <section className="panel" id="arena">
         <div className="section-heading">
-          <p className="eyebrow">Caracteristicas</p>
-          <h2>Lo que ya define la fantasia del juego</h2>
+          <p className="eyebrow">La Experiencia</p>
+          <h2>Todo lo que hace que cada partida se sienta intensa</h2>
         </div>
 
         <div className="feature-grid">
-          {features.map((feature) => (
-            <article className="feature-card" key={feature.title}>
-              <h3>{feature.title}</h3>
-              <p>{feature.text}</p>
+          {highlights.map((item) => (
+            <article className="feature-card" key={item.title}>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="panel status-panel" id="status">
+      <section className="panel deck-panel" id="deck">
         <div className="section-heading">
-          <p className="eyebrow">Estado</p>
-          <h2>Preparado para mostrarse correctamente en Vercel</h2>
+          <p className="eyebrow">Deck Builder</p>
+          <h2>Ejemplo de cartas para montar una composicion ofensiva</h2>
+        </div>
+
+        <div className="cards-grid">
+          {cards.map((card) => (
+            <article className="game-card" key={card.name}>
+              <div className="game-card-top">
+                <span className="mana-cost">{card.cost}</span>
+                <span className="rarity-pill">{card.rarity}</span>
+              </div>
+              <h3>{card.name}</h3>
+              <p>{card.type}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel status-panel">
+        <div className="section-heading">
+          <p className="eyebrow">Core Loop</p>
+          <h2>El juego gira alrededor de progresion, combate y coleccion</h2>
         </div>
 
         <div className="status-layout">
           <article className="status-card">
-            <h3>Que se corrigio</h3>
+            <h3>Dentro de la partida</h3>
             <ul>
-              <li>Se anadio una app web valida en la raiz para Next.js.</li>
-              <li>Se excluyo la app movil interna del chequeo de TypeScript del deploy.</li>
-              <li>Se simplifico la configuracion de Vercel para evitar rutas rotas.</li>
+              <li>Gestiona la energia y no malgastes el tempo.</li>
+              <li>Presiona una linea o responde al push rival.</li>
+              <li>Protege tus torres mientras fuerzas el avance.</li>
             </ul>
           </article>
 
           <article className="status-card">
-            <h3>Siguiente roadmap</h3>
+            <h3>Fuera de la partida</h3>
             <ul>
-              {roadmap.map((item) => (
+              {pillars.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
