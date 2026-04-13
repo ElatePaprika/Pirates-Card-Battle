@@ -4,7 +4,8 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Pirates Card Battle',
-  description: 'Juego de cartas pirata con combates, coleccion y progresion competitiva.',
+  description:
+    'Prototipo original de juego de cartas y arena pirata en tiempo real con energia, torres y bot rival.',
 }
 
 export default function RootLayout({
