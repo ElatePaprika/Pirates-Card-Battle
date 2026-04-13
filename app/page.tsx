@@ -1021,3 +1021,153 @@ export default function HomePage() {
               ))}
             </div>
           </div>
+
+          <div className="section-block">
+            <h2>Cartas diarias</h2>
+            <div className="entry-list">
+              {shopCards.map((card, index) => (
+                <button
+                  className={`store-entry ${shopSelection === index ? 'store-entry-active' : ''}`}
+                  key={card.id}
+                  onClick={() => setShopSelection(index)}
+                  type="button"
+                >
+                  <div className={`mini-card-art ${rarityClass[card.rarity]}`} style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
+                    <div className="character-head" />
+                    <div className="character-body" />
+                    <div className="character-gear" />
+                  </div>
+                  <div className="entry-copy">
+                    <strong>{card.name}</strong>
+                    <span>{card.rarity}</span>
+                  </div>
+                  <b>{card.priceGold > 0 ? `${card.priceGold} oro` : `${card.priceGems} gemas`}</b>
+                </button>
+              ))}
+            </div>
+            {selectedShopCard ? <button className="buy-main" onClick={buySelectedCard} type="button">Comprar {selectedShopCard.name} · {selectedShopCost}</button> : null}
+          </div>
+        </section>
+      ) : (
+        <section className="page-panel">
+          <div className="section-block">
+            <h2>Mazo activo</h2>
+            <div className="deck-edit-grid">
+              {visibleDeck.map((card, index) => (
+                <button
+                  className={`deck-edit-card ${selectedDeckSlot === index ? 'deck-edit-active' : ''} ${rarityClass[card.rarity]} tone-${card.art.tone}`}
+                  key={`${card.id}-${index}`}
+                  onClick={() => {
+                    setSelectedDeckSlot(index)
+                    setSelectedCardId(card.id)
+                  }}
+                  type="button"
+                >
+                  <div className="card-frame">
+                    <div className="card-portrait" style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
+                      <div className="character-head" />
+                      <div className="character-body" />
+                      <div className="character-gear" />
+                    </div>
+                  </div>
+                  <span>{card.level}</span>
+                </button>
+              ))}
+            </div>
+            <div className="average-elixir">Coste medio de elixir: {averageElixir}</div>
+          </div>
+
+          <div className="section-block">
+            <h2>Detalle</h2>
+            <article className={`detail-card ${rarityClass[selectedDetailCard.rarity]} tone-${selectedDetailCard.art.tone}`}>
+              <div className="detail-head">
+                <div className="card-frame">
+                  <div className="card-portrait large" style={{ background: `linear-gradient(180deg, ${selectedDetailCard.color}, ${selectedDetailCard.accent})` }}>
+                    <div className="character-head" />
+                    <div className="character-body" />
+                    <div className="character-gear" />
+                  </div>
+                </div>
+                <div>
+                  <strong>{selectedDetailCard.name}</strong>
+                  <p>{selectedDetailCard.summary}</p>
+                </div>
+              </div>
+
+              <div className="tag-row">
+                <span className="tag">{selectedDetailCard.role}</span>
+                <span className="tag">{selectedDetailCard.battleRole}</span>
+                <span className="tag">{getToneLabel(selectedDetailCard.art.tone)}</span>
+                <span className="tag">{getTargetLabel(selectedDetailCard.target)}</span>
+                <span className="tag">{selectedDetailCard.art.size}</span>
+              </div>
+
+              <div className="stats-grid">
+                <span>Daño: {selectedDetailCard.damage}</span>
+                <span>Vida: {selectedDetailCard.hp ?? '-'}</span>
+                <span>Velocidad: {selectedDetailCard.speed ?? '-'}</span>
+                <span>Rango: {selectedDetailCard.range ?? '-'}</span>
+                <span>Cooldown: {selectedDetailCard.cooldown ?? '-'}</span>
+                <span>Coste: {selectedDetailCard.cost}</span>
+              </div>
+
+              <div className="lore-grid">
+                <article>
+                  <strong>Silueta y forma</strong>
+                  <p>{selectedDetailCard.art.silhouette} {selectedDetailCard.art.shape}</p>
+                </article>
+                <article>
+                  <strong>Color y lectura</strong>
+                  <p>{selectedDetailCard.art.palette}</p>
+                </article>
+                <article>
+                  <strong>Detalles y animación</strong>
+                  <p>{selectedDetailCard.art.iconic} {selectedDetailCard.art.animation}</p>
+                </article>
+                <article>
+                  <strong>Feedback visual</strong>
+                  <p>{selectedDetailCard.art.feedback}</p>
+                </article>
+              </div>
+            </article>
+          </div>
+
+          <div className="section-block">
+            <h2>Colección</h2>
+            <div className="entry-list">
+              {ownedCards.map((card) => (
+                <button
+                  className={`store-entry ${rarityClass[card.rarity]} tone-${card.art.tone}`}
+                  key={card.id}
+                  onClick={() => {
+                    setSelectedCardId(card.id)
+                    swapDeckCard(card.id)
+                  }}
+                  type="button"
+                >
+                  <div className="mini-card-art" style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
+                    <div className="character-head" />
+                    <div className="character-body" />
+                    <div className="character-gear" />
+                  </div>
+                  <div className="entry-copy">
+                    <strong>{card.name}</strong>
+                    <span>{card.battleRole}</span>
+                    <div className="mini-progress"><i style={{ width: `${(card.progress / card.progressMax) * 100}%` }} /></div>
+                  </div>
+                  <b>{card.cost}</b>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <nav className="bottom-nav">
+        <button className={tab === 'shop' ? 'active' : ''} onClick={() => setTab('shop')} type="button"><span className="nav-icon">◈</span><strong>Tienda</strong></button>
+        <button className={tab === 'battle' ? 'active' : ''} onClick={() => setTab('battle')} type="button"><span className="nav-icon">⚔</span><strong>Batalla</strong></button>
+        <button className={tab === 'cards' ? 'active' : ''} onClick={() => setTab('cards')} type="button"><span className="nav-icon">▣</span><strong>Cartas</strong></button>
+      </nav>
+    </main>
+  )
+}
