@@ -6,6 +6,8 @@ type Tab = 'shop' | 'battle' | 'cards'
 type Screen = 'home' | 'battle'
 type Side = 'player' | 'bot'
 type CardType = 'unit' | 'spell'
+type TargetType = 'ground' | 'air-ground' | 'buildings'
+type RoleTone = 'tank' | 'damage' | 'support' | 'spell'
 
 type Account = {
   name: string
@@ -15,11 +17,24 @@ type Account = {
   trophies: number
 }
 
+type ArtDirection = {
+  silhouette: string
+  shape: string
+  palette: string
+  iconic: string
+  animation: string
+  feedback: string
+  size: '1x1' | '1x2' | '2x2'
+  tone: RoleTone
+}
+
 type Card = {
   id: string
   name: string
   role: string
+  battleRole: string
   type: CardType
+  target: TargetType
   rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary'
   cost: number
   level: number
@@ -34,6 +49,8 @@ type Card = {
   accent: string
   priceGold: number
   priceGems: number
+  summary: string
+  art: ArtDirection
 }
 
 type Tower = {
@@ -66,12 +83,28 @@ type Unit = {
   accent: string
   name: string
   role: string
+  target: TargetType
+  tone: RoleTone
+  size: ArtDirection['size']
 }
 
 type DragState = {
   cardIndex: number
   x: number
   y: number
+}
+
+type TowerBlueprint = {
+  name: string
+  role: string
+  hp: number
+  damage: number
+  range: number
+  cooldown: number
+  architecture: string
+  color: string
+  animation: string
+  feedback: string
 }
 
 const cols = 24
@@ -81,19 +114,296 @@ const maxEnergy = 10
 const battleDuration = 120
 
 const cards: Card[] = [
-  { id: 'skipper', name: 'Skipper', role: 'Duelista rápido', type: 'unit', rarity: 'Common', cost: 2, level: 1, progress: 0, progressMax: 2, hp: 120, damage: 18, speed: 14, range: 5, cooldown: 0.75, color: '#f7c04f', accent: '#fff0c8', priceGold: 40, priceGems: 5 },
-  { id: 'gunner', name: 'Coral Gunner', role: 'Tirador', type: 'unit', rarity: 'Common', cost: 3, level: 1, progress: 0, progressMax: 2, hp: 130, damage: 26, speed: 11, range: 13, cooldown: 1, color: '#73d7ff', accent: '#ecfcff', priceGold: 60, priceGems: 8 },
-  { id: 'guard', name: 'Harbor Guard', role: 'Defensor', type: 'unit', rarity: 'Rare', cost: 3, level: 1, progress: 0, progressMax: 2, hp: 220, damage: 20, speed: 9, range: 5, cooldown: 0.95, color: '#8ce087', accent: '#efffe8', priceGold: 120, priceGems: 16 },
-  { id: 'powder', name: 'Powder Burst', role: 'Explosión', type: 'spell', rarity: 'Common', cost: 3, level: 1, progress: 0, progressMax: 2, damage: 72, color: '#ff7da3', accent: '#ffe7ef', priceGold: 80, priceGems: 10 },
-  { id: 'brute', name: 'Anchor Brute', role: 'Tanque', type: 'unit', rarity: 'Rare', cost: 5, level: 1, progress: 0, progressMax: 2, hp: 320, damage: 40, speed: 8, range: 5, cooldown: 1.1, color: '#ff9368', accent: '#ffe0d2', priceGold: 220, priceGems: 24 },
-  { id: 'siren', name: 'Tide Siren', role: 'Maga de rango', type: 'unit', rarity: 'Epic', cost: 4, level: 1, progress: 0, progressMax: 2, hp: 150, damage: 24, speed: 10, range: 14, cooldown: 0.82, color: '#9b9fff', accent: '#f0f1ff', priceGold: 0, priceGems: 70 },
-  { id: 'captain', name: 'Wave Captain', role: 'Líder', type: 'unit', rarity: 'Legendary', cost: 4, level: 1, progress: 0, progressMax: 2, hp: 230, damage: 30, speed: 11, range: 8, cooldown: 0.9, color: '#cfa2ff', accent: '#f7ecff', priceGold: 0, priceGems: 120 },
-  { id: 'storm', name: 'Storm Call', role: 'Impacto pesado', type: 'spell', rarity: 'Epic', cost: 4, level: 1, progress: 0, progressMax: 2, damage: 98, color: '#89abff', accent: '#edf2ff', priceGold: 0, priceGems: 80 },
+  {
+    id: 'skipper',
+    name: 'Skipper',
+    role: 'Duelista rápido',
+    battleRole: 'Presión barata',
+    type: 'unit',
+    target: 'ground',
+    rarity: 'Common',
+    cost: 2,
+    level: 1,
+    progress: 0,
+    progressMax: 2,
+    hp: 120,
+    damage: 18,
+    speed: 14,
+    range: 5,
+    cooldown: 0.75,
+    color: '#f3b34d',
+    accent: '#fff0c4',
+    priceGold: 40,
+    priceGems: 5,
+    summary: 'Unidad ligera de presión instantánea para forzar respuestas y castigar líneas vacías.',
+    art: {
+      silhouette: 'Pequeño pirata inclinado hacia delante con sombrero ladeado y espada corta muy visible.',
+      shape: 'Figura angulada con centro de masa frontal y lectura clara en 1x1 tile.',
+      palette: 'Amarillo salino, crema y cuero tostado para transmitir velocidad y agresión ligera.',
+      iconic: 'Sombrero triangular, espada corta y pañuelo de alto contraste.',
+      animation: 'Idle con rebote sobre los talones; ataque en estocada rápida con recuperación corta.',
+      feedback: 'Trazo breve al atacar y flash blanco corto al conectar.',
+      size: '1x1',
+      tone: 'damage',
+    },
+  },
+  {
+    id: 'gunner',
+    name: 'Coral Gunner',
+    role: 'Tirador',
+    battleRole: 'Eliminación a distancia',
+    type: 'unit',
+    target: 'air-ground',
+    rarity: 'Common',
+    cost: 3,
+    level: 1,
+    progress: 0,
+    progressMax: 2,
+    hp: 130,
+    damage: 26,
+    speed: 11,
+    range: 13,
+    cooldown: 1,
+    color: '#66d7ff',
+    accent: '#ecfcff',
+    priceGold: 60,
+    priceGems: 8,
+    summary: 'DPS lineal con proyectil visible y muy buena lectura para controlar unidades aéreas o terrestres.',
+    art: {
+      silhouette: 'Perfil vertical fino dominado por un rifle coralino largo y casco redondo.',
+      shape: 'Cuerpo delgado, hombros estrechos y arma que define toda la lectura.',
+      palette: 'Azul agua, cian eléctrico y gris perla para código visual de soporte ofensivo.',
+      iconic: 'Arma alargada de coral, visor redondo y mochila de munición compacta.',
+      animation: 'Idle con respiración sutil; disparo con anticipación mínima y fuerte retroceso.',
+      feedback: 'Proyectil brillante con chispa en impacto y destello frío en boca del arma.',
+      size: '1x2',
+      tone: 'support',
+    },
+  },
+  {
+    id: 'guard',
+    name: 'Harbor Guard',
+    role: 'Defensor',
+    battleRole: 'Contención',
+    type: 'unit',
+    target: 'ground',
+    rarity: 'Rare',
+    cost: 3,
+    level: 1,
+    progress: 0,
+    progressMax: 2,
+    hp: 220,
+    damage: 20,
+    speed: 9,
+    range: 5,
+    cooldown: 0.95,
+    color: '#75c66f',
+    accent: '#efffe8',
+    priceGold: 120,
+    priceGems: 16,
+    summary: 'Bloque compacto de defensa con presencia frontal clara y lectura inmediata de unidad resistente.',
+    art: {
+      silhouette: 'Escudo hexagonal ancho y porra corta sobresaliendo por un lateral.',
+      shape: 'Volumen medio, centro de masa bajo y postura cuadrada.',
+      palette: 'Verde puerto, beige arena y metal apagado para un rol de defensa estable.',
+      iconic: 'Escudo ancho, remaches visibles y casco corto de guardia.',
+      animation: 'Idle casi inmóvil; ataque con pequeño paso al frente y golpe de escudo.',
+      feedback: 'Impacto contundente con polvo bajo y tinte rojo rápido al recibir daño.',
+      size: '1x2',
+      tone: 'tank',
+    },
+  },
+  {
+    id: 'powder',
+    name: 'Powder Burst',
+    role: 'Explosión en área',
+    battleRole: 'Limpieza de enjambre',
+    type: 'spell',
+    target: 'air-ground',
+    rarity: 'Common',
+    cost: 3,
+    level: 1,
+    progress: 0,
+    progressMax: 2,
+    damage: 72,
+    range: 16,
+    color: '#ff7da3',
+    accent: '#ffe7ef',
+    priceGold: 80,
+    priceGems: 10,
+    summary: 'Hechizo circular de respuesta rápida para romper acumulaciones y castigar apoyos agrupados.',
+    art: {
+      silhouette: 'Marcador circular de pólvora con mecha encendida y borde irregular.',
+      shape: 'Forma redonda compacta con centro brillante y humo periférico.',
+      palette: 'Rosa explosivo, naranja pólvora y humo crema para destacar sobre el tablero.',
+      iconic: 'Mecha chispeante, anillo de combustión y nube corta de ceniza.',
+      animation: 'Advertencia en suelo, chispa descendente e impacto esférico con expansión veloz.',
+      feedback: 'Glow intenso, onda exterior y partículas negras con pequeño temblor visual.',
+      size: '1x2',
+      tone: 'spell',
+    },
+  },
+  {
+    id: 'brute',
+    name: 'Anchor Brute',
+    role: 'Tanque',
+    battleRole: 'Win condition',
+    type: 'unit',
+    target: 'buildings',
+    rarity: 'Rare',
+    cost: 5,
+    level: 1,
+    progress: 0,
+    progressMax: 2,
+    hp: 320,
+    damage: 40,
+    speed: 8,
+    range: 5,
+    cooldown: 1.1,
+    color: '#ff8e63',
+    accent: '#ffe0d2',
+    priceGold: 220,
+    priceGems: 24,
+    summary: 'Tanque principal de silueta enorme y objetivo estructural prioritario para abrir la partida.',
+    art: {
+      silhouette: 'Masa corporal muy grande con ancla descomunal sobre el hombro.',
+      shape: 'Volumétrico, redondeado y pesado, ocupando lectura de 2x2 tiles.',
+      palette: 'Naranja quemado, hierro oscuro y cuerda arena para un tanque muy reconocible.',
+      iconic: 'Ancla sobredimensionada, brazales metálicos y cinturones gruesos.',
+      animation: 'Pasos lentos y pesados; ataque con elevación larga del ancla y golpe descendente.',
+      feedback: 'Golpe con polvo radial, sacudida breve y flash cálido de alto peso.',
+      size: '2x2',
+      tone: 'tank',
+    },
+  },
+  {
+    id: 'siren',
+    name: 'Tide Siren',
+    role: 'Maga de rango',
+    battleRole: 'Control de línea',
+    type: 'unit',
+    target: 'air-ground',
+    rarity: 'Epic',
+    cost: 4,
+    level: 1,
+    progress: 0,
+    progressMax: 2,
+    hp: 150,
+    damage: 24,
+    speed: 10,
+    range: 14,
+    cooldown: 0.82,
+    color: '#8f97ff',
+    accent: '#f0f1ff',
+    priceGold: 0,
+    priceGems: 70,
+    summary: 'Maga estilizada con proyectil acuático para control sostenido y lectura premium.',
+    art: {
+      silhouette: 'Figura curvada con báculo de caracola brillante y velo ondulante.',
+      shape: 'Estilizada, flotante y de eje vertical largo, muy distinta al resto del mazo.',
+      palette: 'Violeta marino, azul claro y blanco nacarado con glow suave.',
+      iconic: 'Báculo con caracola luminosa, cabello flotante y aura marina tenue.',
+      animation: 'Idle con levitación; ataque con compresión de agua y liberación elástica.',
+      feedback: 'Splash pequeño, estela líquida y destello violeta-azulado al impactar.',
+      size: '1x2',
+      tone: 'support',
+    },
+  },
+  {
+    id: 'captain',
+    name: 'Wave Captain',
+    role: 'Líder híbrido',
+    battleRole: 'Presión versátil',
+    type: 'unit',
+    target: 'ground',
+    rarity: 'Legendary',
+    cost: 4,
+    level: 1,
+    progress: 0,
+    progressMax: 2,
+    hp: 230,
+    damage: 30,
+    speed: 11,
+    range: 8,
+    cooldown: 0.9,
+    color: '#c99cff',
+    accent: '#f7ecff',
+    priceGold: 0,
+    priceGems: 120,
+    summary: 'Unidad de prestigio con presencia de comandante, perfil híbrido y excelente legibilidad.',
+    art: {
+      silhouette: 'Capitán con sable curvo, hombreras amplias y capa corta muy marcada.',
+      shape: 'Intermedia entre tanque y DPS, con torso ancho y arma elegante.',
+      palette: 'Violeta real, dorado viejo y azul profundo para jerarquía visual.',
+      iconic: 'Sable curvo, abrigo corto y emblema dorado en pecho u hombros.',
+      animation: 'Idle con capa agitándose; ataque en corte barrido con estela de agua.',
+      feedback: 'Arco luminoso sutil, chispas acuáticas y golpe de prioridad media.',
+      size: '1x2',
+      tone: 'damage',
+    },
+  },
+  {
+    id: 'storm',
+    name: 'Storm Call',
+    role: 'Impacto pesado',
+    battleRole: 'Remate de alto valor',
+    type: 'spell',
+    target: 'air-ground',
+    rarity: 'Epic',
+    cost: 4,
+    level: 1,
+    progress: 0,
+    progressMax: 2,
+    damage: 98,
+    range: 16,
+    color: '#7f9dff',
+    accent: '#edf2ff',
+    priceGold: 0,
+    priceGems: 80,
+    summary: 'Hechizo de burst con telegraph muy claro para rematar pushes o cerrar daño sobre torre.',
+    art: {
+      silhouette: 'Nube compacta con rayo vertical concentrado en el centro de un círculo de aviso.',
+      shape: 'Vertical y focalizada, con lectura de caída puntual y halo eléctrico.',
+      palette: 'Azul tormenta, blanco eléctrico y lila frío con glow intenso.',
+      iconic: 'Rayo central, anillo de electricidad y grieta luminosa residual.',
+      animation: 'Suelo se oscurece, aparecen chispas y cae un rayo con flash de alta prioridad.',
+      feedback: 'Distorsión ligera, residuo eléctrico breve y golpe más brillante que Powder Burst.',
+      size: '1x2',
+      tone: 'spell',
+    },
+  },
 ]
 
-const initialDeck = ['skipper', 'gunner', 'guard', 'powder', 'skipper', 'gunner', 'guard', 'powder']
-const initialOwned = ['skipper', 'gunner', 'guard', 'powder']
-const botDeck = ['skipper', 'guard', 'gunner', 'powder', 'brute', 'siren', 'skipper', 'powder']
+const towerBlueprints: Record<Tower['kind'], TowerBlueprint> = {
+  archer: {
+    name: 'Princess Tower',
+    role: 'Defensa lateral',
+    hp: 420,
+    damage: 22,
+    range: 18,
+    cooldown: 1.1,
+    architecture: 'Base cuadrada de piedra y madera con plataforma abierta y arquera visible.',
+    color: 'Piedra gris/beige con banners y tejado azul o rojo según el equipo.',
+    animation: 'Recoil ligero al disparar y arquera en pose activa constante.',
+    feedback: 'Proyectil visible, impacto corto y barra de vida siempre legible.',
+  },
+  king: {
+    name: 'King Tower',
+    role: 'Núcleo central',
+    hp: 900,
+    damage: 28,
+    range: 22,
+    cooldown: 1.25,
+    architecture: 'Estructura más alta, más ancha y rematada con corona y acentos dorados.',
+    color: 'Piedra neutra reforzada con detalles reales azules o rojos.',
+    animation: 'En reposo se siente pesada; al activarse intensifica el disparo y la presencia visual.',
+    feedback: 'Impacto ligeramente mayor, brillo en corona y lectura jerárquica inmediata.',
+  },
+}
+
+const initialDeck = ['skipper', 'gunner', 'guard', 'powder', 'brute', 'siren', 'captain', 'storm']
+const initialOwned = ['skipper', 'gunner', 'guard', 'powder', 'brute', 'siren', 'captain', 'storm']
+const botDeck = ['skipper', 'guard', 'gunner', 'powder', 'brute', 'siren', 'captain', 'storm']
 
 const rarityClass: Record<Card['rarity'], string> = {
   Common: 'rarity-common',
@@ -126,6 +436,30 @@ function makeTowers(): Tower[] {
     { id: 'player-right', side: 'player', x: 72, y: 78, hp: 420, maxHp: 420, damage: 22, range: 18, cooldown: 1.1, attackTimer: 0, kind: 'archer' },
     { id: 'player-king', side: 'player', x: 50, y: 91, hp: 900, maxHp: 900, damage: 28, range: 22, cooldown: 1.25, attackTimer: 0, kind: 'king' },
   ]
+}
+
+function getToneLabel(tone: RoleTone) {
+  switch (tone) {
+    case 'tank':
+      return 'Tanque'
+    case 'damage':
+      return 'Daño'
+    case 'support':
+      return 'Soporte'
+    case 'spell':
+      return 'Hechizo'
+  }
+}
+
+function getTargetLabel(target: TargetType) {
+  switch (target) {
+    case 'ground':
+      return 'Tierra'
+    case 'air-ground':
+      return 'Aire y tierra'
+    case 'buildings':
+      return 'Estructuras'
+  }
 }
 
 export default function HomePage() {
@@ -185,7 +519,12 @@ export default function HomePage() {
   const ownedCards = useMemo(() => cards.filter((card) => owned.includes(card.id)), [owned])
   const shopCards = useMemo(() => cards.filter((card) => !owned.includes(card.id)), [owned])
   const selectedShopCard = shopCards[shopSelection] ?? null
+  const selectedDetailCard = getCard(selectedCardId)
   const averageElixir = useMemo(() => (visibleDeck.reduce((sum, card) => sum + card.cost, 0) / visibleDeck.length).toFixed(1), [visibleDeck])
+  const selectedShopCost =
+    selectedShopCard?.priceGold && selectedShopCard.priceGold > 0
+      ? `${selectedShopCard.priceGold} oro`
+      : `${selectedShopCard?.priceGems ?? 0} gemas`
 
   const resetBattle = () => {
     setTowers(makeTowers())
@@ -264,6 +603,9 @@ export default function HomePage() {
         accent: card.accent,
         name: card.name,
         role: card.role,
+        target: card.target,
+        tone: card.art.tone,
+        size: card.art.size,
       },
     ])
   }
@@ -338,7 +680,7 @@ export default function HomePage() {
             .filter((tower) => tower.side !== unit.side && tower.hp > 0)
             .sort((a, b) => Math.hypot(a.x - unit.x, a.y - unit.y) - Math.hypot(b.x - unit.x, b.y - unit.y))
 
-          const targetUnit = enemyUnits[0]
+          const targetUnit = unit.target === 'buildings' ? undefined : enemyUnits[0]
           const targetTower = enemyTowers[0]
 
           if (targetUnit && Math.hypot(targetUnit.x - unit.x, targetUnit.y - unit.y) <= unit.range) {
@@ -357,7 +699,7 @@ export default function HomePage() {
             continue
           }
 
-          const focus = targetUnit ?? targetTower
+          const focus = targetTower ?? targetUnit
           if (focus) {
             const dx = focus.x - unit.x
             const dy = focus.y - unit.y
@@ -442,19 +784,13 @@ export default function HomePage() {
     }
   }, [screen, result, towers, timeLeft])
 
-  const selectedDetailCard = getCard(selectedCardId)
-  const selectedShopCost =
-    selectedShopCard?.priceGold && selectedShopCard.priceGold > 0
-      ? `${selectedShopCard.priceGold} oro`
-      : `${selectedShopCard?.priceGems ?? 0} gemas`
-
   if (screen === 'battle') {
     return (
       <main className="phone-shell battle-shell">
         <header className="battle-hud">
           <div className="hud-player enemy">
             <strong>Rival</strong>
-            <span>0</span>
+            <span>0 coronas</span>
           </div>
           <div className="hud-center">
             <strong>{formatTime(timeLeft)}</strong>
@@ -462,7 +798,7 @@ export default function HomePage() {
           </div>
           <div className="hud-player">
             <strong>{account.name}</strong>
-            <span>0</span>
+            <span>0 coronas</span>
           </div>
         </header>
 
@@ -473,6 +809,7 @@ export default function HomePage() {
           </div>
 
           <div className="arena-board" ref={arenaRef}>
+            <div className="arena-atmosphere" />
             <div className="arena-half enemy-half" />
             <div className="arena-river" />
             <div className="arena-half player-half" />
@@ -491,17 +828,21 @@ export default function HomePage() {
               <div className={`tower-node ${tower.side} ${tower.kind}`} key={tower.id} style={{ left: `${tower.x}%`, top: `${tower.y}%` }}>
                 <div className="tower-shadow" />
                 <div className="tower-crown" />
-                <div className="tower-body"><div className="tower-window" /></div>
+                <div className="tower-body">
+                  <div className="tower-window" />
+                  {tower.kind === 'archer' ? <div className="tower-archer" /> : <div className="tower-emblem" />}
+                </div>
                 <div className="tower-hp"><i style={{ width: `${(tower.hp / tower.maxHp) * 100}%` }} /></div>
               </div>
             ))}
 
             {units.map((unit) => (
-              <div className={`unit-node ${unit.side}`} key={unit.id} style={{ left: `${unit.x}%`, top: `${unit.y}%` }}>
+              <div className={`unit-node ${unit.side} tone-${unit.tone} size-${unit.size.replace('x', '-')}`} key={unit.id} style={{ left: `${unit.x}%`, top: `${unit.y}%` }}>
                 <div className="unit-ring" />
                 <div className="unit-card-portrait" style={{ background: `linear-gradient(180deg, ${unit.color}, ${unit.accent})` }}>
                   <div className="character-head" />
                   <div className="character-body" />
+                  <div className="character-gear" />
                 </div>
                 <div className="unit-hp"><i style={{ width: `${(unit.hp / unit.maxHp) * 100}%` }} /></div>
               </div>
@@ -524,7 +865,7 @@ export default function HomePage() {
           <div className="hand-grid">
             {battleHand.map((card, index) => (
               <button
-                className={`hand-card ${rarityClass[card.rarity]} ${playerEnergy < card.cost ? 'disabled' : ''}`}
+                className={`hand-card ${rarityClass[card.rarity]} tone-${card.art.tone} ${playerEnergy < card.cost ? 'disabled' : ''}`}
                 key={`${card.id}-${index}`}
                 onPointerDown={(event) => onCardPointerDown(index, event)}
                 onPointerMove={onCardPointerMove}
@@ -536,9 +877,11 @@ export default function HomePage() {
                   <div className="card-portrait battle" style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
                     <div className="character-head" />
                     <div className="character-body" />
+                    <div className="character-gear" />
                   </div>
                 </div>
                 <strong>{card.name}</strong>
+                <span className="hand-role">{card.battleRole}</span>
               </button>
             ))}
           </div>
@@ -550,15 +893,17 @@ export default function HomePage() {
 
         {dragState ? (
           <div className="drag-ghost" style={{ left: dragState.x, top: dragState.y }}>
-            <div className={`hand-card ghost ${rarityClass[battleHand[dragState.cardIndex].rarity]}`}>
+            <div className={`hand-card ghost ${rarityClass[battleHand[dragState.cardIndex].rarity]} tone-${battleHand[dragState.cardIndex].art.tone}`}>
               <div className="hand-cost">{battleHand[dragState.cardIndex].cost}</div>
               <div className="card-frame">
                 <div className="card-portrait battle" style={{ background: `linear-gradient(180deg, ${battleHand[dragState.cardIndex].color}, ${battleHand[dragState.cardIndex].accent})` }}>
                   <div className="character-head" />
                   <div className="character-body" />
+                  <div className="character-gear" />
                 </div>
               </div>
               <strong>{battleHand[dragState.cardIndex].name}</strong>
+              <span className="hand-role">{battleHand[dragState.cardIndex].battleRole}</span>
             </div>
           </div>
         ) : null}
@@ -595,15 +940,24 @@ export default function HomePage() {
           </div>
 
           <div className="section-block">
-            <h2>Cofres</h2>
-            <div className="chest-grid">
-              {['Ready', 'Unlocking', 'Locked', 'Locked'].map((state, index) => (
-                <article className={`chest-slot chest-${state.toLowerCase()}`} key={index}>
-                  <div className="chest-visual"><div className="chest-lid" /><div className="chest-body" /></div>
-                  <strong>{state === 'Ready' ? 'Silver Chest' : state === 'Unlocking' ? 'Gold Chest' : 'Chest Slot'}</strong>
-                  <span>{state === 'Unlocking' ? '02:14:21' : state}</span>
-                </article>
-              ))}
+            <h2>Sistema visual</h2>
+            <div className="system-grid">
+              <article className="system-chip">
+                <strong>Silueta</strong>
+                <span>Reconocimiento en menos de 300 ms por forma y postura.</span>
+              </article>
+              <article className="system-chip">
+                <strong>Color</strong>
+                <span>Tanque oscuro, daño cálido, soporte frío y hechizo brillante.</span>
+              </article>
+              <article className="system-chip">
+                <strong>Animación</strong>
+                <span>Anticipación, impacto y recuperación en cada acción relevante.</span>
+              </article>
+              <article className="system-chip">
+                <strong>Escala</strong>
+                <span>Unidades entre 1x1 y 2x2 tiles con masa clara según su rol.</span>
+              </article>
             </div>
           </div>
 
@@ -611,11 +965,12 @@ export default function HomePage() {
             <h2>Mazo activo</h2>
             <div className="deck-strip">
               {visibleDeck.map((card, index) => (
-                <article className={`deck-home-card ${rarityClass[card.rarity]}`} key={`${card.id}-${index}`}>
+                <article className={`deck-home-card ${rarityClass[card.rarity]} tone-${card.art.tone}`} key={`${card.id}-${index}`}>
                   <div className="card-frame">
                     <div className="card-portrait" style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
                       <div className="character-head" />
                       <div className="character-body" />
+                      <div className="character-gear" />
                     </div>
                   </div>
                   <span>Nv {card.level}</span>
@@ -626,7 +981,7 @@ export default function HomePage() {
           </div>
 
           <button className="battle-button" onClick={openBattle} type="button">Batalla</button>
-          <div className="battle-subnote">El modo práctica no da premios.</div>
+          <div className="battle-subnote">El modo práctica sirve para probar lectura visual y ritmo de combate.</div>
         </section>
       ) : tab === 'shop' ? (
         <section className="page-panel">
@@ -635,135 +990,34 @@ export default function HomePage() {
             <div className="offer-banner">
               <div className="offer-glow" />
               <strong>Pack fundador</strong>
-              <span>Todo empieza en 0: no hay monedas, gemas ni trofeos al crear cuenta.</span>
+              <span>Las cartas ya nacen con identidad visual fuerte y diferenciación inmediata por rol.</span>
             </div>
           </div>
 
           <div className="section-block">
-            <h2>Cofres</h2>
-            <div className="shop-grid">
-              {['Silver', 'Gold', 'Magic', 'Giant'].map((name, index) => (
-                <article className="shop-card" key={name}>
-                  <div className={`shop-chest chest-tone-${index}`} />
-                  <strong>{name} Chest</strong>
-                  <button className="mini-buy" type="button">Bloqueado</button>
+            <h2>Torres</h2>
+            <div className="tower-blueprints">
+              {Object.entries(towerBlueprints).map(([key, tower]) => (
+                <article className={`tower-card tone-${key === 'king' ? 'tank' : 'support'}`} key={key}>
+                  <div className={`tower-preview ${key}`}>
+                    <div className="tower-shadow" />
+                    <div className="tower-crown" />
+                    <div className="tower-body">
+                      <div className="tower-window" />
+                      {key === 'archer' ? <div className="tower-archer" /> : <div className="tower-emblem" />}
+                    </div>
+                  </div>
+                  <div className="tower-copy">
+                    <strong>{tower.name}</strong>
+                    <span>{tower.role}</span>
+                    <p>{tower.architecture}</p>
+                    <div className="tower-stats">
+                      <span>HP {tower.hp}</span>
+                      <span>Daño {tower.damage}</span>
+                      <span>Rango {tower.range}</span>
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>
           </div>
-
-          <div className="section-block">
-            <h2>Cartas diarias</h2>
-            <div className="entry-list">
-              {shopCards.map((card, index) => (
-                <button
-                  className={`store-entry ${shopSelection === index ? 'store-entry-active' : ''}`}
-                  key={card.id}
-                  onClick={() => setShopSelection(index)}
-                  type="button"
-                >
-                  <div className={`mini-card-art ${rarityClass[card.rarity]}`} style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
-                    <div className="character-head" />
-                    <div className="character-body" />
-                  </div>
-                  <div className="entry-copy">
-                    <strong>{card.name}</strong>
-                    <span>{card.rarity}</span>
-                  </div>
-                  <b>{card.priceGold > 0 ? `${card.priceGold} oro` : `${card.priceGems} gemas`}</b>
-                </button>
-              ))}
-            </div>
-            {selectedShopCard ? <button className="buy-main" onClick={buySelectedCard} type="button">Comprar {selectedShopCard.name} · {selectedShopCost}</button> : null}
-          </div>
-        </section>
-      ) : (
-        <section className="page-panel">
-          <div className="section-block">
-            <h2>Mazo activo</h2>
-            <div className="deck-edit-grid">
-              {visibleDeck.map((card, index) => (
-                <button
-                  className={`deck-edit-card ${selectedDeckSlot === index ? 'deck-edit-active' : ''} ${rarityClass[card.rarity]}`}
-                  key={`${card.id}-${index}`}
-                  onClick={() => {
-                    setSelectedDeckSlot(index)
-                    setSelectedCardId(card.id)
-                  }}
-                  type="button"
-                >
-                  <div className="card-frame">
-                    <div className="card-portrait" style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
-                      <div className="character-head" />
-                      <div className="character-body" />
-                    </div>
-                  </div>
-                  <span>{card.level}</span>
-                </button>
-              ))}
-            </div>
-            <div className="average-elixir">Coste medio de elixir: {averageElixir}</div>
-          </div>
-
-          <div className="section-block">
-            <h2>Detalle</h2>
-            <article className={`detail-card ${rarityClass[selectedDetailCard.rarity]}`}>
-              <div className="detail-head">
-                <div className="card-frame">
-                  <div className="card-portrait large" style={{ background: `linear-gradient(180deg, ${selectedDetailCard.color}, ${selectedDetailCard.accent})` }}>
-                    <div className="character-head" />
-                    <div className="character-body" />
-                  </div>
-                </div>
-                <div>
-                  <strong>{selectedDetailCard.name}</strong>
-                  <p>{selectedDetailCard.role}</p>
-                </div>
-              </div>
-              <div className="stats-grid">
-                <span>Daño: {selectedDetailCard.damage}</span>
-                <span>Vida: {selectedDetailCard.hp ?? '-'}</span>
-                <span>Velocidad: {selectedDetailCard.speed ?? '-'}</span>
-                <span>Rango: {selectedDetailCard.range ?? '-'}</span>
-              </div>
-            </article>
-          </div>
-
-          <div className="section-block">
-            <h2>Colección</h2>
-            <div className="entry-list">
-              {ownedCards.map((card) => (
-                <button
-                  className={`store-entry ${rarityClass[card.rarity]}`}
-                  key={card.id}
-                  onClick={() => {
-                    setSelectedCardId(card.id)
-                    swapDeckCard(card.id)
-                  }}
-                  type="button"
-                >
-                  <div className="mini-card-art" style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
-                    <div className="character-head" />
-                    <div className="character-body" />
-                  </div>
-                  <div className="entry-copy">
-                    <strong>{card.name}</strong>
-                    <span>Nivel {card.level}</span>
-                    <div className="mini-progress"><i style={{ width: `${(card.progress / card.progressMax) * 100}%` }} /></div>
-                  </div>
-                  <b>{card.cost}</b>
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      <nav className="bottom-nav">
-        <button className={tab === 'shop' ? 'active' : ''} onClick={() => setTab('shop')} type="button"><span className="nav-icon">◈</span><strong>Tienda</strong></button>
-        <button className={tab === 'battle' ? 'active' : ''} onClick={() => setTab('battle')} type="button"><span className="nav-icon">⚔</span><strong>Batalla</strong></button>
-        <button className={tab === 'cards' ? 'active' : ''} onClick={() => setTab('cards')} type="button"><span className="nav-icon">▣</span><strong>Cartas</strong></button>
-      </nav>
-    </main>
-  )
-}
