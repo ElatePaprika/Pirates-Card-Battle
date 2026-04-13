@@ -2,30 +2,33 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-type Screen = 'home' | 'practice'
-type Lane = 0 | 1
+type Screen = 'home' | 'deck' | 'shop' | 'battle'
 type Side = 'player' | 'bot'
+type Lane = 0 | 1
 type CardType = 'unit' | 'spell'
 
 type Card = {
   id: string
   name: string
+  role: string
   type: CardType
   cost: number
+  rarity: 'Common' | 'Rare' | 'Epic'
+  color: string
+  accent: string
   hp?: number
   damage: number
   speed?: number
   range?: number
   cooldown?: number
-  flavor: string
-  rarity: 'Common' | 'Rare' | 'Epic'
-  color: string
   price: number
 }
 
 type Unit = {
   id: number
   cardId: string
+  name: string
+  role: string
   side: Side
   lane: Lane
   x: number
@@ -37,7 +40,7 @@ type Unit = {
   cooldown: number
   attackTimer: number
   color: string
-  name: string
+  accent: string
 }
 
 type Tower = {
@@ -54,134 +57,46 @@ type Tower = {
   label: string
 }
 
+type DragState = {
+  cardIndex: number
+  x: number
+  y: number
+}
+
 const cards: Card[] = [
-  {
-    id: 'deckhand',
-    name: 'Deckhand',
-    type: 'unit',
-    cost: 2,
-    hp: 110,
-    damage: 18,
-    speed: 8,
-    range: 5,
-    cooldown: 0.9,
-    flavor: 'Barato y rapido para rotar.',
-    rarity: 'Common',
-    color: '#ffd161',
-    price: 0,
-  },
-  {
-    id: 'gunner',
-    name: 'Coral Gunner',
-    type: 'unit',
-    cost: 3,
-    hp: 120,
-    damage: 28,
-    speed: 6,
-    range: 18,
-    cooldown: 1.1,
-    flavor: 'Apoyo a distancia para limpiar linea.',
-    rarity: 'Common',
-    color: '#83d9ff',
-    price: 0,
-  },
-  {
-    id: 'brute',
-    name: 'Anchor Brute',
-    type: 'unit',
-    cost: 5,
-    hp: 300,
-    damage: 36,
-    speed: 4,
-    range: 5,
-    cooldown: 1.2,
-    flavor: 'Tanque frontal para empujar.',
-    rarity: 'Rare',
-    color: '#ff9e6b',
-    price: 220,
-  },
-  {
-    id: 'singer',
-    name: 'Tide Singer',
-    type: 'unit',
-    cost: 4,
-    hp: 150,
-    damage: 24,
-    speed: 6,
-    range: 16,
-    cooldown: 0.8,
-    flavor: 'Disparo constante con buen alcance.',
-    rarity: 'Rare',
-    color: '#9aa8ff',
-    price: 180,
-  },
-  {
-    id: 'bomb',
-    name: 'Powder Burst',
-    type: 'spell',
-    cost: 3,
-    damage: 72,
-    flavor: 'Explota una linea y remata tropas.',
-    rarity: 'Common',
-    color: '#ff7f9f',
-    price: 140,
-  },
-  {
-    id: 'storm',
-    name: 'Storm Call',
-    type: 'spell',
-    cost: 4,
-    damage: 96,
-    flavor: 'Golpe fuerte de area.',
-    rarity: 'Epic',
-    color: '#86a8ff',
-    price: 320,
-  },
-  {
-    id: 'guard',
-    name: 'Harbor Guard',
-    type: 'unit',
-    cost: 3,
-    hp: 220,
-    damage: 21,
-    speed: 5,
-    range: 5,
-    cooldown: 1,
-    flavor: 'Defensa estable y barata.',
-    rarity: 'Common',
-    color: '#a6e38a',
-    price: 120,
-  },
-  {
-    id: 'captain',
-    name: 'Wave Captain',
-    type: 'unit',
-    cost: 4,
-    hp: 210,
-    damage: 32,
-    speed: 6,
-    range: 8,
-    cooldown: 0.95,
-    flavor: 'Carta versatil para cerrar push.',
-    rarity: 'Epic',
-    color: '#caa6ff',
-    price: 350,
-  },
+  { id: 'skipper', name: 'Skipper', role: 'Espadachin veloz', type: 'unit', cost: 2, rarity: 'Common', color: '#ffcb63', accent: '#fff1c7', hp: 120, damage: 18, speed: 10, range: 5, cooldown: 0.8, price: 0 },
+  { id: 'gunner', name: 'Coral Gunner', role: 'Tirador de apoyo', type: 'unit', cost: 3, rarity: 'Common', color: '#7ad8ff', accent: '#e7fbff', hp: 130, damage: 28, speed: 7, range: 18, cooldown: 1.05, price: 0 },
+  { id: 'brute', name: 'Anchor Brute', role: 'Tanque frontal', type: 'unit', cost: 5, rarity: 'Rare', color: '#ff9368', accent: '#ffe4d7', hp: 310, damage: 40, speed: 4, range: 5, cooldown: 1.15, price: 220 },
+  { id: 'siren', name: 'Tide Siren', role: 'Maga de rango', type: 'unit', cost: 4, rarity: 'Rare', color: '#9b9cff', accent: '#efefff', hp: 155, damage: 24, speed: 6, range: 17, cooldown: 0.8, price: 200 },
+  { id: 'guard', name: 'Harbor Guard', role: 'Defensa estable', type: 'unit', cost: 3, rarity: 'Common', color: '#90e28b', accent: '#efffe7', hp: 220, damage: 21, speed: 5, range: 5, cooldown: 0.95, price: 150 },
+  { id: 'captain', name: 'Wave Captain', role: 'Lider versatil', type: 'unit', cost: 4, rarity: 'Epic', color: '#d0a0ff', accent: '#f5eaff', hp: 220, damage: 32, speed: 7, range: 8, cooldown: 0.9, price: 340 },
+  { id: 'powder', name: 'Powder Burst', role: 'Hechizo rapido', type: 'spell', cost: 3, rarity: 'Common', color: '#ff7ea6', accent: '#ffe6ef', damage: 72, price: 140 },
+  { id: 'storm', name: 'Storm Call', role: 'Impacto pesado', type: 'spell', cost: 4, rarity: 'Epic', color: '#88abff', accent: '#eef3ff', damage: 98, price: 330 },
 ]
 
-const initialOwned = ['deckhand', 'gunner', 'bomb', 'guard']
-const initialDeck = ['deckhand', 'gunner', 'bomb', 'guard', 'deckhand', 'gunner', 'bomb', 'guard']
-const botDeck = ['deckhand', 'guard', 'gunner', 'bomb', 'brute', 'singer', 'deckhand', 'bomb']
+const initialOwned = ['skipper', 'gunner', 'guard', 'powder']
+const initialDeck = ['skipper', 'gunner', 'guard', 'powder', 'skipper', 'gunner', 'guard', 'powder']
+const botDeck = ['skipper', 'guard', 'gunner', 'powder', 'brute', 'siren', 'skipper', 'powder']
+const maxEnergy = 10
+const battleSeconds = 120
 
-const MAX_ENERGY = 10
-const MATCH_TIME = 120
-
-function byId(id: string) {
-  return cards.find((card) => card.id === id)!
+function getCard(cardId: string) {
+  return cards.find((card) => card.id === cardId)!
 }
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))
+}
+
+function makeTowers(): Tower[] {
+  return [
+    { id: 'player-top', side: 'player', lane: 0, x: 16, hp: 420, maxHp: 420, damage: 22, range: 24, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
+    { id: 'player-bottom', side: 'player', lane: 1, x: 16, hp: 420, maxHp: 420, damage: 22, range: 24, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
+    { id: 'player-king', side: 'player', lane: null, x: 8, hp: 900, maxHp: 900, damage: 28, range: 25, cooldown: 1.25, attackTimer: 0, label: 'King Tower' },
+    { id: 'bot-top', side: 'bot', lane: 0, x: 84, hp: 420, maxHp: 420, damage: 22, range: 24, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
+    { id: 'bot-bottom', side: 'bot', lane: 1, x: 84, hp: 420, maxHp: 420, damage: 22, range: 24, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
+    { id: 'bot-king', side: 'bot', lane: null, x: 92, hp: 900, maxHp: 900, damage: 28, range: 25, cooldown: 1.25, attackTimer: 0, label: 'King Tower' },
+  ]
 }
 
 function formatTime(value: number) {
@@ -191,39 +106,29 @@ function formatTime(value: number) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
-function makeTowers(): Tower[] {
-  return [
-    { id: 'p-top', side: 'player', lane: 0, x: 18, hp: 420, maxHp: 420, damage: 22, range: 22, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
-    { id: 'p-bottom', side: 'player', lane: 1, x: 18, hp: 420, maxHp: 420, damage: 22, range: 22, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
-    { id: 'p-king', side: 'player', lane: null, x: 7, hp: 900, maxHp: 900, damage: 28, range: 25, cooldown: 1.2, attackTimer: 0, label: 'Flagship' },
-    { id: 'b-top', side: 'bot', lane: 0, x: 82, hp: 420, maxHp: 420, damage: 22, range: 22, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
-    { id: 'b-bottom', side: 'bot', lane: 1, x: 82, hp: 420, maxHp: 420, damage: 22, range: 22, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
-    { id: 'b-king', side: 'bot', lane: null, x: 93, hp: 900, maxHp: 900, damage: 28, range: 25, cooldown: 1.2, attackTimer: 0, label: 'Flagship' },
-  ]
-}
-
 export default function HomePage() {
   const [screen, setScreen] = useState<Screen>('home')
-  const [gold, setGold] = useState(500)
+  const [gold, setGold] = useState(520)
   const [owned, setOwned] = useState<string[]>(initialOwned)
   const [deck, setDeck] = useState<string[]>(initialDeck)
   const [selectedDeckSlot, setSelectedDeckSlot] = useState(0)
-  const [selectedBattleCard, setSelectedBattleCard] = useState(0)
-  const [playerEnergy, setPlayerEnergy] = useState(5)
-  const [botEnergy, setBotEnergy] = useState(5)
-  const [timeLeft, setTimeLeft] = useState(MATCH_TIME)
+  const [shopIndex, setShopIndex] = useState(0)
   const [units, setUnits] = useState<Unit[]>([])
   const [towers, setTowers] = useState<Tower[]>(makeTowers())
-  const [winner, setWinner] = useState<string | null>(null)
-  const [log, setLog] = useState<string[]>(['Pulsa Practica para jugar contra el bot.'])
-  const [shopIndex, setShopIndex] = useState(0)
+  const [playerEnergy, setPlayerEnergy] = useState(5)
+  const [botEnergy, setBotEnergy] = useState(5)
+  const [timeLeft, setTimeLeft] = useState(battleSeconds)
+  const [battleResult, setBattleResult] = useState<string | null>(null)
+  const [battleLog, setBattleLog] = useState<string[]>(['Arrastra una carta de la mano y suéltala en tu lado del campo.'])
+  const [dragState, setDragState] = useState<DragState | null>(null)
 
+  const arenaRef = useRef<HTMLDivElement | null>(null)
   const unitIdRef = useRef(1)
-  const botDecisionRef = useRef(0)
   const unitsRef = useRef<Unit[]>([])
-  const towersRef = useRef<Tower[]>([])
+  const towersRef = useRef<Tower[]>(makeTowers())
   const botEnergyRef = useRef(5)
-  const timeLeftRef = useRef(MATCH_TIME)
+  const timeLeftRef = useRef(battleSeconds)
+  const botThinkRef = useRef(0)
 
   useEffect(() => {
     unitsRef.current = units
@@ -242,46 +147,44 @@ export default function HomePage() {
   }, [timeLeft])
 
   const ownedCards = useMemo(() => cards.filter((card) => owned.includes(card.id)), [owned])
-  const shopCards = useMemo(() => cards.filter((card) => !owned.includes(card.id)), [owned])
-  const practiceHand = useMemo(() => deck.map((id) => byId(id)), [deck])
-  const activeShopCard = shopCards[shopIndex] ?? null
+  const buyableCards = useMemo(() => cards.filter((card) => !owned.includes(card.id)), [owned])
+  const featuredShopCard = buyableCards[shopIndex] ?? null
+  const handCards = useMemo(() => deck.slice(0, 4).map((cardId) => getCard(cardId)), [deck])
 
-  const pushLog = (message: string) => {
-    setLog((current) => [message, ...current].slice(0, 6))
+  const addLog = (message: string) => {
+    setBattleLog((current) => [message, ...current].slice(0, 5))
   }
 
-  const resetPractice = () => {
+  const resetBattle = () => {
     setUnits([])
     setTowers(makeTowers())
     setPlayerEnergy(5)
     setBotEnergy(5)
-    setTimeLeft(MATCH_TIME)
-    setWinner(null)
-    setSelectedBattleCard(0)
-    setLog(['Modo practica activo. Despliega tropas tocando una linea.'])
+    setTimeLeft(battleSeconds)
+    setBattleResult(null)
+    setBattleLog(['Arrastra una carta de la mano y suéltala en tu lado del campo.'])
     unitIdRef.current = 1
-    botDecisionRef.current = 0
+    botThinkRef.current = 0
   }
 
-  const startPractice = () => {
-    resetPractice()
-    setScreen('practice')
+  const openBattle = () => {
+    resetBattle()
+    setScreen('battle')
   }
 
-  const swapDeckCard = (cardId: string) => {
+  const replaceDeckSlot = (cardId: string) => {
     setDeck((current) => current.map((value, index) => (index === selectedDeckSlot ? cardId : value)))
   }
 
   const buyCard = () => {
-    if (!activeShopCard || gold < activeShopCard.price) return
-    setGold((value) => value - activeShopCard.price)
-    setOwned((current) => [...current, activeShopCard.id])
-    pushLog(`Has comprado ${activeShopCard.name}.`)
+    if (!featuredShopCard || gold < featuredShopCard.price) return
+    setGold((current) => current - featuredShopCard.price)
+    setOwned((current) => [...current, featuredShopCard.id])
     setShopIndex(0)
   }
 
-  const summon = (cardId: string, side: Side, lane: Lane) => {
-    const card = byId(cardId)
+  const summonCard = (cardId: string, side: Side, lane: Lane) => {
+    const card = getCard(cardId)
 
     if (card.type === 'spell') {
       setUnits((current) =>
@@ -296,94 +199,126 @@ export default function HomePage() {
       setTowers((current) =>
         current.map((tower) => {
           if (tower.side === side || (tower.lane !== lane && tower.lane !== null)) return tower
-          const dealt = Math.round(card.damage * (tower.lane === null ? 0.5 : 0.7))
+          const dealt = Math.round(card.damage * (tower.lane === null ? 0.52 : 0.72))
           return { ...tower, hp: Math.max(0, tower.hp - dealt) }
         })
       )
 
-      pushLog(`${side === 'player' ? 'Has usado' : 'El bot ha usado'} ${card.name}.`)
+      addLog(`${side === 'player' ? 'Has lanzado' : 'El bot ha lanzado'} ${card.name}.`)
       return
     }
 
     const unit: Unit = {
       id: unitIdRef.current++,
-      cardId,
+      cardId: card.id,
+      name: card.name,
+      role: card.role,
       side,
       lane,
-      x: side === 'player' ? 14 : 86,
+      x: side === 'player' ? 18 : 82,
       hp: card.hp ?? 100,
       maxHp: card.hp ?? 100,
       damage: card.damage,
-      speed: card.speed ?? 6,
+      speed: card.speed ?? 5,
       range: card.range ?? 5,
       cooldown: card.cooldown ?? 1,
       attackTimer: 0,
       color: card.color,
-      name: card.name,
+      accent: card.accent,
     }
 
     setUnits((current) => [...current, unit])
-    pushLog(`${side === 'player' ? 'Has desplegado' : 'El bot despliega'} ${card.name} en ${lane === 0 ? 'la linea superior' : 'la linea inferior'}.`)
+    addLog(`${side === 'player' ? 'Has desplegado' : 'El bot despliega'} ${card.name} en ${lane === 0 ? 'arriba' : 'abajo'}.`)
   }
 
-  const deployPlayer = (lane: Lane) => {
-    if (winner) return
-    const card = practiceHand[selectedBattleCard]
+  const deployDraggedCard = (cardIndex: number, lane: Lane) => {
+    if (battleResult) return
+    const card = handCards[cardIndex]
     if (!card || playerEnergy < card.cost) return
-    summon(card.id, 'player', lane)
-    setPlayerEnergy((value) => clamp(value - card.cost, 0, MAX_ENERGY))
+    summonCard(card.id, 'player', lane)
+    setPlayerEnergy((current) => clamp(current - card.cost, 0, maxEnergy))
+  }
+
+  const onCardPointerDown = (index: number, event: React.PointerEvent<HTMLButtonElement>) => {
+    const card = handCards[index]
+    if (!card || playerEnergy < card.cost || battleResult) return
+    event.currentTarget.setPointerCapture(event.pointerId)
+    setDragState({ cardIndex: index, x: event.clientX, y: event.clientY })
+  }
+
+  const onCardPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragState) return
+    setDragState((current) => (current ? { ...current, x: event.clientX, y: event.clientY } : null))
+  }
+
+  const onCardPointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragState) return
+
+    const arena = arenaRef.current
+    if (arena) {
+      const rect = arena.getBoundingClientRect()
+      const insideArena =
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom
+
+      if (insideArena) {
+        const relativeY = event.clientY - rect.top
+        const lane = relativeY < rect.height / 2 ? 0 : 1
+        deployDraggedCard(dragState.cardIndex, lane)
+      }
+    }
+
+    setDragState(null)
   }
 
   useEffect(() => {
-    if (screen !== 'practice' || winner) return
+    if (screen !== 'battle' || battleResult) return
 
-    const timer = window.setInterval(() => {
+    const interval = window.setInterval(() => {
       const delta = 0.1
-
       setTimeLeft((current) => Math.max(0, current - delta))
 
-      const regen = timeLeftRef.current <= 30 ? 0.8 : 0.4
-      setPlayerEnergy((current) => clamp(current + regen * delta, 0, MAX_ENERGY))
-      setBotEnergy((current) => clamp(current + regen * delta, 0, MAX_ENERGY))
+      const regen = timeLeftRef.current <= 30 ? 0.82 : 0.42
+      setPlayerEnergy((current) => clamp(current + regen * delta, 0, maxEnergy))
+      setBotEnergy((current) => clamp(current + regen * delta, 0, maxEnergy))
 
       setUnits((currentUnits) => {
-        const updated = currentUnits.map((unit) => ({
-          ...unit,
-          attackTimer: Math.max(0, unit.attackTimer - delta),
-        }))
-
+        const updated = currentUnits.map((unit) => ({ ...unit, attackTimer: Math.max(0, unit.attackTimer - delta) }))
         const unitDamage = new Map<number, number>()
         const towerDamage = new Map<string, number>()
 
         for (const unit of updated) {
-          const direction = unit.side === 'player' ? 1 : -1
-          const enemyUnits = updated
-            .filter((enemy) => enemy.side !== unit.side && enemy.lane === unit.lane)
+          const enemies = updated
+            .filter((other) => other.side !== unit.side && other.lane === unit.lane)
             .sort((a, b) => Math.abs(a.x - unit.x) - Math.abs(b.x - unit.x))
+
           const enemyTowers = towersRef.current
             .filter((tower) => tower.side !== unit.side && (tower.lane === unit.lane || tower.lane === null) && tower.hp > 0)
             .sort((a, b) => Math.abs(a.x - unit.x) - Math.abs(b.x - unit.x))
 
-          const enemyUnit = enemyUnits[0]
-          const enemyTower = enemyTowers[0]
+          const targetUnit = enemies[0]
+          const targetTower = enemyTowers[0]
 
-          if (enemyUnit && Math.abs(enemyUnit.x - unit.x) <= unit.range) {
+          if (targetUnit && Math.abs(targetUnit.x - unit.x) <= unit.range) {
             if (unit.attackTimer <= 0) {
-              unitDamage.set(enemyUnit.id, (unitDamage.get(enemyUnit.id) ?? 0) + unit.damage)
+              unitDamage.set(targetUnit.id, (unitDamage.get(targetUnit.id) ?? 0) + unit.damage)
               unit.attackTimer = unit.cooldown
             }
             continue
           }
 
-          if (enemyTower && Math.abs(enemyTower.x - unit.x) <= unit.range) {
+          if (targetTower && Math.abs(targetTower.x - unit.x) <= unit.range) {
             if (unit.attackTimer <= 0) {
-              towerDamage.set(enemyTower.id, (towerDamage.get(enemyTower.id) ?? 0) + unit.damage)
+              towerDamage.set(targetTower.id, (towerDamage.get(targetTower.id) ?? 0) + unit.damage)
               unit.attackTimer = unit.cooldown
             }
             continue
           }
 
-          unit.x = clamp(unit.x + unit.speed * delta * direction, 6, 94)
+          const direction = unit.side === 'player' ? 1 : -1
+          unit.x = clamp(unit.x + unit.speed * delta * direction, 8, 92)
         }
 
         if (towerDamage.size > 0) {
@@ -397,18 +332,12 @@ export default function HomePage() {
         }
 
         return updated
-          .map((unit) =>
-            unitDamage.has(unit.id) ? { ...unit, hp: unit.hp - (unitDamage.get(unit.id) ?? 0) } : unit
-          )
+          .map((unit) => (unitDamage.has(unit.id) ? { ...unit, hp: unit.hp - (unitDamage.get(unit.id) ?? 0) } : unit))
           .filter((unit) => unit.hp > 0)
       })
 
       setTowers((currentTowers) => {
-        const updated = currentTowers.map((tower) => ({
-          ...tower,
-          attackTimer: Math.max(0, tower.attackTimer - delta),
-        }))
-
+        const updated = currentTowers.map((tower) => ({ ...tower, attackTimer: Math.max(0, tower.attackTimer - delta) }))
         const unitDamage = new Map<number, number>()
 
         for (const tower of updated) {
@@ -426,9 +355,7 @@ export default function HomePage() {
         if (unitDamage.size > 0) {
           setUnits((current) =>
             current
-              .map((unit) =>
-                unitDamage.has(unit.id) ? { ...unit, hp: unit.hp - (unitDamage.get(unit.id) ?? 0) } : unit
-              )
+              .map((unit) => (unitDamage.has(unit.id) ? { ...unit, hp: unit.hp - (unitDamage.get(unit.id) ?? 0) } : unit))
               .filter((unit) => unit.hp > 0)
           )
         }
@@ -436,339 +363,318 @@ export default function HomePage() {
         return updated
       })
 
-      botDecisionRef.current += delta
-      if (botDecisionRef.current >= 2.2) {
-        botDecisionRef.current = 0
-        const playable = botDeck.map(byId).filter((card) => card.cost <= botEnergyRef.current)
+      botThinkRef.current += delta
+      if (botThinkRef.current >= 2.2) {
+        botThinkRef.current = 0
+        const playable = botDeck.map(getCard).filter((card) => card.cost <= botEnergyRef.current)
         if (playable.length > 0) {
-          const lane: Lane =
-            unitsRef.current.filter((unit) => unit.side === 'player' && unit.lane === 0).length >
-            unitsRef.current.filter((unit) => unit.side === 'player' && unit.lane === 1).length
-              ? 0
-              : 1
+          const pressureTop = unitsRef.current.filter((unit) => unit.side === 'player' && unit.lane === 0).length
+          const pressureBottom = unitsRef.current.filter((unit) => unit.side === 'player' && unit.lane === 1).length
+          const lane: Lane = pressureTop > pressureBottom ? 0 : 1
           const chosen = playable[Math.floor(Math.random() * playable.length)]
-          summon(chosen.id, 'bot', lane)
-          setBotEnergy((current) => clamp(current - chosen.cost, 0, MAX_ENERGY))
+          summonCard(chosen.id, 'bot', lane)
+          setBotEnergy((current) => clamp(current - chosen.cost, 0, maxEnergy))
         }
       }
     }, 100)
 
-    return () => window.clearInterval(timer)
-  }, [screen, winner, practiceHand, selectedBattleCard])
+    return () => window.clearInterval(interval)
+  }, [screen, battleResult, handCards])
 
   useEffect(() => {
-    if (screen !== 'practice' || winner) return
+    if (screen !== 'battle' || battleResult) return
 
-    const playerKing = towers.find((tower) => tower.id === 'p-king')?.hp ?? 0
-    const botKing = towers.find((tower) => tower.id === 'b-king')?.hp ?? 0
+    const playerKing = towers.find((tower) => tower.id === 'player-king')?.hp ?? 0
+    const botKing = towers.find((tower) => tower.id === 'bot-king')?.hp ?? 0
 
     if (playerKing <= 0) {
-      setWinner('Derrota')
-      pushLog('El bot ha destruido tu flagship.')
+      setBattleResult('Derrota')
       return
     }
 
     if (botKing <= 0) {
-      setWinner('Victoria')
-      pushLog('Has destruido el flagship rival.')
-      setGold((value) => value + 60)
+      setBattleResult('Victoria')
+      setGold((current) => current + 60)
       return
     }
 
     if (timeLeft <= 0) {
       const playerTotal = towers.filter((tower) => tower.side === 'player').reduce((sum, tower) => sum + tower.hp, 0)
       const botTotal = towers.filter((tower) => tower.side === 'bot').reduce((sum, tower) => sum + tower.hp, 0)
-      const result = playerTotal >= botTotal ? 'Victoria a tiempo' : 'Derrota a tiempo'
-      setWinner(result)
+      const result = playerTotal >= botTotal ? 'Victoria por puntos' : 'Derrota por puntos'
+      setBattleResult(result)
       if (playerTotal >= botTotal) {
-        setGold((value) => value + 40)
+        setGold((current) => current + 40)
       }
-      pushLog(`La practica ha terminado: ${result}.`)
     }
-  }, [screen, towers, timeLeft, winner])
+  }, [screen, battleResult, towers, timeLeft])
 
-  const playerTop = towers.find((tower) => tower.id === 'p-top')
-  const playerBottom = towers.find((tower) => tower.id === 'p-bottom')
-  const playerKing = towers.find((tower) => tower.id === 'p-king')
-  const botTop = towers.find((tower) => tower.id === 'b-top')
-  const botBottom = towers.find((tower) => tower.id === 'b-bottom')
-  const botKing = towers.find((tower) => tower.id === 'b-king')
+  const playerKing = towers.find((tower) => tower.id === 'player-king')
+  const botKing = towers.find((tower) => tower.id === 'bot-king')
 
-  if (screen === 'practice') {
+  if (screen === 'deck') {
     return (
-      <main className="battle-screen">
-        <header className="battle-header">
-          <button className="back-button" onClick={() => setScreen('home')} type="button">
-            Volver
-          </button>
-          <div className="battle-meta">
-            <div>
-              <span>Modo</span>
-              <strong>Practica</strong>
-            </div>
-            <div>
-              <span>Tiempo</span>
-              <strong>{formatTime(timeLeft)}</strong>
-            </div>
-            <div>
-              <span>Resultado</span>
-              <strong>{winner ?? 'En juego'}</strong>
-            </div>
-          </div>
+      <main className="phone-shell">
+        <header className="topbar">
+          <button className="nav-back" onClick={() => setScreen('home')} type="button">Inicio</button>
+          <div className="topbar-title"><span>Mazos</span><strong>Editor de mazos</strong></div>
+          <div className="topbar-pill">8 cartas</div>
         </header>
 
-        <section className="arena-shell">
-          <div className="arena-score">
-            <article>
-              <span>Tu energia</span>
-              <strong>{playerEnergy.toFixed(1)}</strong>
-            </article>
-            <article>
-              <span>Bot</span>
-              <strong>{botEnergy.toFixed(1)}</strong>
-            </article>
-          </div>
-
-          <div className="king-row">
-            <div className="king-card player">
-              <span>{playerKing?.label}</span>
-              <strong>{playerKing?.hp}/{playerKing?.maxHp}</strong>
-              <div className="hp"><i style={{ width: `${((playerKing?.hp ?? 0) / (playerKing?.maxHp ?? 1)) * 100}%` }} /></div>
-            </div>
-            <div className="king-card bot">
-              <span>{botKing?.label}</span>
-              <strong>{botKing?.hp}/{botKing?.maxHp}</strong>
-              <div className="hp"><i style={{ width: `${((botKing?.hp ?? 0) / (botKing?.maxHp ?? 1)) * 100}%` }} /></div>
-            </div>
-          </div>
-
-          {[0, 1].map((laneNumber) => {
-            const lane = laneNumber as Lane
-            const leftTower = lane === 0 ? playerTop : playerBottom
-            const rightTower = lane === 0 ? botTop : botBottom
-            const laneUnits = units.filter((unit) => unit.lane === lane)
-
-            return (
-              <button className="lane-strip" key={lane} onClick={() => deployPlayer(lane)} type="button">
-                <div className="lane-top">
-                  <span>{lane === 0 ? 'Linea superior' : 'Linea inferior'}</span>
-                  <small>Haz click para tirar la carta seleccionada</small>
-                </div>
-
-                <div className="lane-field">
-                  <div className="river" />
-
-                  <div className="tower player" style={{ left: `${leftTower?.x ?? 18}%` }}>
-                    <span>{leftTower?.label}</span>
-                    <div className="hp"><i style={{ width: `${(((leftTower?.hp ?? 0) / (leftTower?.maxHp ?? 1)) * 100)}%` }} /></div>
-                  </div>
-
-                  <div className="tower bot" style={{ left: `${rightTower?.x ?? 82}%` }}>
-                    <span>{rightTower?.label}</span>
-                    <div className="hp"><i style={{ width: `${(((rightTower?.hp ?? 0) / (rightTower?.maxHp ?? 1)) * 100)}%` }} /></div>
-                  </div>
-
-                  {laneUnits.map((unit) => (
-                    <div
-                      className={`troop ${unit.side}`}
-                      key={unit.id}
-                      style={{ left: `${unit.x}%`, background: unit.color }}
-                    >
-                      <b>{unit.name}</b>
-                      <div className="hp mini"><i style={{ width: `${(unit.hp / unit.maxHp) * 100}%` }} /></div>
-                    </div>
-                  ))}
-                </div>
-              </button>
-            )
-          })}
-        </section>
-
-        <section className="practice-bottom">
-          <div className="hand-panel">
-            <div className="section-title">
-              <span>Mano de practica</span>
-              <strong>Tu mazo actual</strong>
-            </div>
-            <div className="hand-grid">
-              {practiceHand.map((card, index) => (
+        <section className="screen-card">
+          <div className="deck-grid">
+            {deck.map((cardId, index) => {
+              const card = getCard(cardId)
+              return (
                 <button
-                  className={`battle-card ${selectedBattleCard === index ? 'battle-card-active' : ''} ${playerEnergy < card.cost ? 'battle-card-low' : ''}`}
-                  key={`${card.id}-${index}`}
-                  onClick={() => setSelectedBattleCard(index)}
+                  className={`deck-slot ${selectedDeckSlot === index ? 'deck-slot-active' : ''}`}
+                  key={`${cardId}-${index}`}
+                  onClick={() => setSelectedDeckSlot(index)}
                   type="button"
                 >
-                  <div className="battle-card-top">
-                    <span className="cost">{card.cost}</span>
-                    <span className="rarity">{card.rarity}</span>
-                  </div>
-                  <h3>{card.name}</h3>
-                  <p>{card.flavor}</p>
+                  <span>{index + 1}</span>
+                  <strong>{card.name}</strong>
+                  <small>{card.cost} elixir</small>
                 </button>
-              ))}
-            </div>
+              )
+            })}
           </div>
 
-          <div className="log-panel practice-log">
-            <div className="section-title">
-              <span>Registro</span>
-              <strong>Que esta pasando</strong>
-            </div>
-            <div className="log-list">
-              {log.map((entry, index) => (
-                <article key={`${entry}-${index}`}>{entry}</article>
-              ))}
-            </div>
+          <div className="subsection-title">Colección</div>
+          <div className="collection-list">
+            {ownedCards.map((card) => (
+              <button className="collection-row" key={card.id} onClick={() => replaceDeckSlot(card.id)} type="button">
+                <div className="character-medal" style={{ background: card.color }}>
+                  <i />
+                </div>
+                <div className="collection-copy">
+                  <strong>{card.name}</strong>
+                  <span>{card.role}</span>
+                </div>
+                <div className="cost-chip">{card.cost}</div>
+              </button>
+            ))}
           </div>
         </section>
       </main>
     )
   }
 
-  return (
-    <main className="home-shell">
-      <header className="top-banner">
-        <div>
-          <p className="game-tag">Pirates Card Battle</p>
-          <h1>Arena naval de cartas con estructura tipo juego móvil competitivo.</h1>
-          <p className="subtitle">
-            Hemos rehecho la pantalla principal desde cero con una distribución parecida a la de un
-            juego de arena: mazos a la izquierda, acceso a batalla al centro y tienda a la derecha.
-          </p>
-        </div>
-        <div className="gold-box">
-          <span>Oro</span>
-          <strong>{gold}</strong>
-        </div>
-      </header>
+  if (screen === 'shop') {
+    return (
+      <main className="phone-shell">
+        <header className="topbar">
+          <button className="nav-back" onClick={() => setScreen('home')} type="button">Inicio</button>
+          <div className="topbar-title"><span>Tienda</span><strong>Ofertas</strong></div>
+          <div className="topbar-pill gold-pill">{gold} oro</div>
+        </header>
 
-      <section className="hub-layout">
-        <aside className="panel deck-editor">
-          <div className="section-title">
-            <span>Editor de mazos</span>
-            <strong>Tu mazo activo</strong>
-          </div>
-
-          <div className="deck-slots">
-            {deck.map((cardId, index) => {
-              const card = byId(cardId)
-              return (
-                <button
-                  className={`slot-card ${selectedDeckSlot === index ? 'slot-card-active' : ''}`}
-                  key={`${cardId}-${index}`}
-                  onClick={() => setSelectedDeckSlot(index)}
-                  type="button"
-                >
-                  <span className="slot-index">{index + 1}</span>
-                  <div className="slot-card-body">
-                    <strong>{card.name}</strong>
-                    <small>{card.cost} elixir</small>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="collection-grid">
-            {ownedCards.map((card) => (
-              <button className="collection-card" key={card.id} onClick={() => swapDeckCard(card.id)} type="button">
-                <div className="battle-card-top">
-                  <span className="cost">{card.cost}</span>
-                  <span className="rarity">{card.rarity}</span>
+        <section className="screen-card">
+          {featuredShopCard ? (
+            <article className="shop-feature">
+              <div className="shop-feature-art" style={{ background: `linear-gradient(180deg, ${featuredShopCard.color}, ${featuredShopCard.accent})` }}>
+                <div className="character-large">
+                  <i />
                 </div>
-                <h3>{card.name}</h3>
-                <p>{card.flavor}</p>
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        <section className="panel center-stage">
-          <div className="arena-preview">
-            <div className="arena-preview-header">
-              <span>Puerto Esmeralda</span>
-              <strong>Batalla 1v1</strong>
-            </div>
-            <div className="preview-board">
-              <div className="preview-lane">
-                <i className="mini-tower left" />
-                <i className="mini-boat mid" />
-                <i className="mini-tower right" />
               </div>
-              <div className="preview-lane">
-                <i className="mini-tower left" />
-                <i className="mini-boat mid" />
-                <i className="mini-tower right" />
+              <h2>{featuredShopCard.name}</h2>
+              <p>{featuredShopCard.role}</p>
+              <div className="shop-meta-row">
+                <span>{featuredShopCard.rarity}</span>
+                <strong>{featuredShopCard.price} oro</strong>
               </div>
-            </div>
-          </div>
-
-          <div className="play-actions">
-            <button className="big-play practice" onClick={startPractice} type="button">
-              Practica
-            </button>
-            <button className="big-play multiplayer" type="button" disabled>
-              Multijugador
-              <small>Proximamente</small>
-            </button>
-          </div>
-
-          <div className="feature-strip">
-            <article>
-              <strong>Multijugador</strong>
-              <p>Lo dejaremos preparado, pero por ahora entra al modo práctica contra bot.</p>
+              <button className="action-button green" onClick={buyCard} type="button">Comprar</button>
             </article>
-            <article>
-              <strong>Tienda</strong>
-              <p>Compra cartas originales con oro para ampliar tu colección.</p>
-            </article>
-            <article>
-              <strong>Mazos</strong>
-              <p>Puedes modificar tus 8 huecos del mazo desde la pantalla principal.</p>
-            </article>
-          </div>
-        </section>
-
-        <aside className="panel shop-panel">
-          <div className="section-title">
-            <span>Tienda</span>
-            <strong>Ofertas del dia</strong>
-          </div>
-
-          {activeShopCard ? (
-            <div className="shop-card-large">
-              <div className="shop-art" style={{ background: activeShopCard.color }} />
-              <h3>{activeShopCard.name}</h3>
-              <p>{activeShopCard.flavor}</p>
-              <div className="shop-meta">
-                <span>{activeShopCard.rarity}</span>
-                <strong>{activeShopCard.price} oro</strong>
-              </div>
-              <button className="buy-button" onClick={buyCard} type="button">
-                Comprar
-              </button>
-            </div>
           ) : (
-            <div className="shop-empty">
-              <strong>Tienes todas las cartas de esta demo.</strong>
-              <p>La siguiente fase será meter progreso, cofres y rotación diaria real.</p>
-            </div>
+            <article className="empty-state">
+              <strong>Toda la tienda está comprada.</strong>
+              <p>La siguiente fase será meter rotación diaria, cofres y progreso.</p>
+            </article>
           )}
 
-          <div className="shop-list">
-            {shopCards.map((card, index) => (
+          <div className="subsection-title">Cartas disponibles</div>
+          <div className="collection-list">
+            {buyableCards.map((card, index) => (
               <button
-                className={`shop-row ${shopIndex === index ? 'shop-row-active' : ''}`}
+                className={`collection-row ${shopIndex === index ? 'collection-row-active' : ''}`}
                 key={card.id}
                 onClick={() => setShopIndex(index)}
                 type="button"
               >
-                <span>{card.name}</span>
-                <strong>{card.price}</strong>
+                <div className="character-medal" style={{ background: card.color }}>
+                  <i />
+                </div>
+                <div className="collection-copy">
+                  <strong>{card.name}</strong>
+                  <span>{card.role}</span>
+                </div>
+                <div className="price-chip">{card.price}</div>
               </button>
             ))}
           </div>
-        </aside>
+        </section>
+      </main>
+    )
+  }
+
+  if (screen === 'battle') {
+    return (
+      <main className="phone-shell battle-phone">
+        <header className="battle-topbar">
+          <button className="nav-back" onClick={() => setScreen('home')} type="button">Salir</button>
+          <div className="battle-clock">{formatTime(timeLeft)}</div>
+          <div className="battle-status">{battleResult ?? 'Práctica'}</div>
+        </header>
+
+        <section className="battlefield-card">
+          <div className="king-health enemy">
+            <span>{botKing?.label}</span>
+            <div className="health-bar"><i style={{ width: `${((botKing?.hp ?? 0) / (botKing?.maxHp ?? 1)) * 100}%` }} /></div>
+          </div>
+
+          <div className="arena-board" ref={arenaRef}>
+            <div className="lane-zone top-zone" />
+            <div className="river-band">
+              <div className="bridge left-bridge" />
+              <div className="bridge right-bridge" />
+            </div>
+            <div className="lane-zone bottom-zone" />
+
+            {towers.map((tower) => {
+              const isEnemy = tower.side === 'bot'
+              const isKing = tower.lane === null
+              const topPosition = isKing ? (isEnemy ? 8 : 92) : tower.lane === 0 ? 27 : 73
+              return (
+                <div
+                  className={`tower-node ${isEnemy ? 'enemy' : 'player'} ${isKing ? 'king-node' : ''}`}
+                  key={tower.id}
+                  style={{ left: `${tower.x}%`, top: `${topPosition}%` }}
+                >
+                  <div className="tower-roof" />
+                  <div className="tower-body" />
+                  <div className="tower-life">
+                    <i style={{ width: `${(tower.hp / tower.maxHp) * 100}%` }} />
+                  </div>
+                </div>
+              )
+            })}
+
+            {units.map((unit) => (
+              <div
+                className={`unit-node ${unit.side}`}
+                key={unit.id}
+                style={{ left: `${unit.x}%`, top: `${unit.lane === 0 ? (unit.side === 'player' ? 39 : 16) : unit.side === 'player' ? 84 : 61}%` }}
+              >
+                <div className="unit-portrait" style={{ background: `linear-gradient(180deg, ${unit.color}, ${unit.accent})` }}>
+                  <i />
+                </div>
+                <div className="unit-life">
+                  <i style={{ width: `${(unit.hp / unit.maxHp) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+
+            <div className="drop-hint top">Suelta aquí</div>
+            <div className="drop-hint bottom">Suelta aquí</div>
+          </div>
+
+          <div className="king-health player">
+            <span>{playerKing?.label}</span>
+            <div className="health-bar"><i style={{ width: `${((playerKing?.hp ?? 0) / (playerKing?.maxHp ?? 1)) * 100}%` }} /></div>
+          </div>
+        </section>
+
+        <section className="bottom-ui">
+          <div className="energy-panel-mobile">
+            <span>Elixir</span>
+            <strong>{playerEnergy.toFixed(1)} / 10</strong>
+            <div className="energy-bar"><i style={{ width: `${(playerEnergy / maxEnergy) * 100}%` }} /></div>
+          </div>
+
+          <div className="hand-row">
+            {handCards.map((card, index) => (
+              <button
+                className={`hand-card ${playerEnergy < card.cost ? 'hand-card-disabled' : ''}`}
+                key={`${card.id}-${index}`}
+                onPointerDown={(event) => onCardPointerDown(index, event)}
+                onPointerMove={onCardPointerMove}
+                onPointerUp={onCardPointerUp}
+                type="button"
+              >
+                <div className="hand-cost">{card.cost}</div>
+                <div className="hand-art" style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
+                  <i />
+                </div>
+                <strong>{card.name}</strong>
+                <span>{card.role}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="battle-log">
+            {battleLog.map((entry, index) => (
+              <article key={`${entry}-${index}`}>{entry}</article>
+            ))}
+          </div>
+        </section>
+
+        {dragState ? (
+          <div className="drag-ghost" style={{ left: dragState.x, top: dragState.y }}>
+            <div className="hand-card ghost">
+              <div className="hand-cost">{handCards[dragState.cardIndex]?.cost}</div>
+              <div className="hand-art" style={{ background: `linear-gradient(180deg, ${handCards[dragState.cardIndex]?.color}, ${handCards[dragState.cardIndex]?.accent})` }}>
+                <i />
+              </div>
+              <strong>{handCards[dragState.cardIndex]?.name}</strong>
+            </div>
+          </div>
+        ) : null}
+      </main>
+    )
+  }
+
+  return (
+    <main className="phone-shell">
+      <header className="home-hero">
+        <div className="hero-badge">Pirates Card Battle</div>
+        <div className="hero-crowns">
+          <div className="hero-tower blue" />
+          <div className="hero-center-emblem" />
+          <div className="hero-tower red" />
+        </div>
+        <h1>Arena vertical de cartas y torres.</h1>
+        <p>Inicio separado del editor de mazos y la tienda, con modo práctica sencillo contra bot mientras llega el multijugador.</p>
+      </header>
+
+      <section className="home-menu">
+        <button className="home-action battle" onClick={openBattle} type="button">
+          <span>Batalla</span>
+          <strong>Modo práctica</strong>
+        </button>
+        <button className="home-action deck" onClick={() => setScreen('deck')} type="button">
+          <span>Mazos</span>
+          <strong>Editor</strong>
+        </button>
+        <button className="home-action shop" onClick={() => setScreen('shop')} type="button">
+          <span>Tienda</span>
+          <strong>{gold} oro</strong>
+        </button>
+        <button className="home-action locked" type="button" disabled>
+          <span>Multijugador</span>
+          <strong>Próximamente</strong>
+        </button>
+      </section>
+
+      <section className="home-preview-card">
+        <div className="preview-phone-arena">
+          <div className="preview-half enemy-half" />
+          <div className="preview-river" />
+          <div className="preview-half player-half" />
+        </div>
+        <div className="preview-copy">
+          <strong>Partidas verticales tipo móvil</strong>
+          <p>Campo de batalla central, torres con barras de vida y mano inferior de 4 cartas para arrastrar y soltar.</p>
+        </div>
       </section>
     </main>
   )
