@@ -2,12 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-type Tab = 'shop' | 'battle' | 'cards'
+type Tab = 'battle' | 'cards' | 'intel'
 type Screen = 'home' | 'battle'
 type Side = 'player' | 'bot'
 type CardType = 'unit' | 'spell'
-type TargetType = 'ground' | 'air-ground' | 'buildings'
+type MovementMode = 'ground' | 'air' | 'static'
+type AttackTarget = 'ground' | 'air-ground' | 'buildings'
+type AttackPattern = 'single' | 'splash'
 type RoleTone = 'tank' | 'damage' | 'support' | 'spell'
+type UnitClass = 'troop' | 'building'
 
 type Account = {
   name: string
@@ -34,7 +37,6 @@ type Card = {
   role: string
   battleRole: string
   type: CardType
-  target: TargetType
   rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary'
   cost: number
   level: number
@@ -45,12 +47,41 @@ type Card = {
   speed?: number
   range?: number
   cooldown?: number
+  splashRadius?: number
+  movement?: MovementMode
+  attackTarget?: AttackTarget
+  attackPattern?: AttackPattern
+  unitClass?: UnitClass
   color: string
   accent: string
-  priceGold: number
-  priceGems: number
   summary: string
   art: ArtDirection
+}
+
+type Unit = {
+  id: number
+  cardId: string
+  side: Side
+  x: number
+  y: number
+  hp: number
+  maxHp: number
+  damage: number
+  speed: number
+  range: number
+  cooldown: number
+  attackTimer: number
+  splashRadius: number
+  movement: MovementMode
+  attackTarget: AttackTarget
+  attackPattern: AttackPattern
+  unitClass: UnitClass
+  color: string
+  accent: string
+  name: string
+  role: string
+  tone: RoleTone
+  size: ArtDirection['size']
 }
 
 type Tower = {
@@ -67,32 +98,15 @@ type Tower = {
   kind: 'king' | 'archer'
 }
 
-type Unit = {
-  id: number
-  side: Side
-  x: number
-  y: number
-  hp: number
-  maxHp: number
-  damage: number
-  speed: number
-  range: number
-  cooldown: number
-  attackTimer: number
-  color: string
-  accent: string
-  name: string
-  role: string
-  target: TargetType
-  tone: RoleTone
-  size: ArtDirection['size']
-}
-
 type DragState = {
   cardIndex: number
   x: number
   y: number
 }
+
+type TargetRef =
+  | { kind: 'unit'; id: number; x: number; y: number }
+  | { kind: 'tower'; id: string; x: number; y: number }
 
 type TowerBlueprint = {
   name: string
@@ -115,34 +129,35 @@ const battleDuration = 120
 
 const cards: Card[] = [
   {
-    id: 'skipper',
-    name: 'Skipper',
-    role: 'Duelista rápido',
-    battleRole: 'Presión barata',
+    id: 'runner',
+    name: 'Cutlass Runner',
+    role: 'Melee rush',
+    battleRole: 'Fast duelist',
     type: 'unit',
-    target: 'ground',
     rarity: 'Common',
     cost: 2,
     level: 1,
     progress: 0,
     progressMax: 2,
-    hp: 120,
-    damage: 18,
-    speed: 14,
+    hp: 128,
+    damage: 24,
+    speed: 15,
     range: 5,
-    cooldown: 0.75,
-    color: '#f3b34d',
-    accent: '#fff0c4',
-    priceGold: 40,
-    priceGems: 5,
-    summary: 'Unidad ligera de presión instantánea para forzar respuestas y castigar líneas vacías.',
+    cooldown: 0.72,
+    movement: 'ground',
+    attackTarget: 'ground',
+    attackPattern: 'single',
+    unitClass: 'troop',
+    color: '#f7af45',
+    accent: '#fff1bd',
+    summary: 'Cheap melee pressure with a very clear sword-first silhouette and fast lane forcing.',
     art: {
-      silhouette: 'Pequeño pirata inclinado hacia delante con sombrero ladeado y espada corta muy visible.',
-      shape: 'Figura angulada con centro de masa frontal y lectura clara en 1x1 tile.',
-      palette: 'Amarillo salino, crema y cuero tostado para transmitir velocidad y agresión ligera.',
-      iconic: 'Sombrero triangular, espada corta y pañuelo de alto contraste.',
-      animation: 'Idle con rebote sobre los talones; ataque en estocada rápida con recuperación corta.',
-      feedback: 'Trazo breve al atacar y flash blanco corto al conectar.',
+      silhouette: 'Small triangular pirate with oversized cutlass and forward-leaning sprint pose.',
+      shape: 'Angular body, tiny waist, high visual momentum and clear 1x1 footprint.',
+      palette: 'Warm saffron, cream cloth and toasted leather for instant damage-role recognition.',
+      iconic: 'Big cutlass, striped scarf and hat spike that reads even at tiny scale.',
+      animation: 'Idle bounce, fast lunge attack and quick recover to keep the unit feeling snappy.',
+      feedback: 'White slash streak, bright hit flash and tiny spark burst on contact.',
       size: '1x1',
       tone: 'damage',
     },
@@ -150,128 +165,170 @@ const cards: Card[] = [
   {
     id: 'gunner',
     name: 'Coral Gunner',
-    role: 'Tirador',
-    battleRole: 'Eliminación a distancia',
+    role: 'Ranged DPS',
+    battleRole: 'Air and ground control',
     type: 'unit',
-    target: 'air-ground',
     rarity: 'Common',
     cost: 3,
     level: 1,
     progress: 0,
     progressMax: 2,
-    hp: 130,
-    damage: 26,
-    speed: 11,
-    range: 13,
+    hp: 142,
+    damage: 29,
+    speed: 10,
+    range: 15,
     cooldown: 1,
-    color: '#66d7ff',
-    accent: '#ecfcff',
-    priceGold: 60,
-    priceGems: 8,
-    summary: 'DPS lineal con proyectil visible y muy buena lectura para controlar unidades aéreas o terrestres.',
+    movement: 'ground',
+    attackTarget: 'air-ground',
+    attackPattern: 'single',
+    unitClass: 'troop',
+    color: '#68d9ff',
+    accent: '#eefcff',
+    summary: 'Long-ranged shooter with visible projectile rhythm and clear anti-air responsibility.',
     art: {
-      silhouette: 'Perfil vertical fino dominado por un rifle coralino largo y casco redondo.',
-      shape: 'Cuerpo delgado, hombros estrechos y arma que define toda la lectura.',
-      palette: 'Azul agua, cian eléctrico y gris perla para código visual de soporte ofensivo.',
-      iconic: 'Arma alargada de coral, visor redondo y mochila de munición compacta.',
-      animation: 'Idle con respiración sutil; disparo con anticipación mínima y fuerte retroceso.',
-      feedback: 'Proyectil brillante con chispa en impacto y destello frío en boca del arma.',
+      silhouette: 'Narrow body dominated by a long coral rifle and rounded sea-helmet.',
+      shape: 'Tall vertical read with the weapon doing most of the recognition work.',
+      palette: 'Cyan, sea blue and pearl white to code support fire and precision.',
+      iconic: 'Rifle barrel, shoulder stock and coral sights.',
+      animation: 'Light breathing in idle and a big recoil kick on each shot.',
+      feedback: 'Cold muzzle flash, clear tracer line and crisp impact spark.',
       size: '1x2',
       tone: 'support',
     },
   },
   {
-    id: 'guard',
-    name: 'Harbor Guard',
-    role: 'Defensor',
-    battleRole: 'Contención',
+    id: 'bulwark',
+    name: 'Ironhook Bulwark',
+    role: 'Tanky melee',
+    battleRole: 'Frontline stopper',
     type: 'unit',
-    target: 'ground',
+    rarity: 'Rare',
+    cost: 4,
+    level: 1,
+    progress: 0,
+    progressMax: 2,
+    hp: 290,
+    damage: 28,
+    speed: 8,
+    range: 5,
+    cooldown: 1.05,
+    movement: 'ground',
+    attackTarget: 'ground',
+    attackPattern: 'single',
+    unitClass: 'troop',
+    color: '#8e5b45',
+    accent: '#ffd9c2',
+    summary: 'Heavy brawler with a giant hook-shield silhouette built to anchor pushes and absorb fire.',
+    art: {
+      silhouette: 'Broad shield mass, huge hook arm and very low center of gravity.',
+      shape: 'Round volume with massive shoulders and grounded stance.',
+      palette: 'Deep rust, steel gray and ember orange to scream tank instantly.',
+      iconic: 'Hook shield, armor plates and bright chest buckle.',
+      animation: 'Weighty idle sway, shoulder slam attack and slow but satisfying recoil.',
+      feedback: 'Dust burst, hot hit flash and deep red damage blink when focused.',
+      size: '2x2',
+      tone: 'tank',
+    },
+  },
+  {
+    id: 'parrot',
+    name: 'Bomb Parrot',
+    role: 'Flying splash',
+    battleRole: 'Aerial bomber',
+    type: 'unit',
     rarity: 'Rare',
     cost: 3,
     level: 1,
     progress: 0,
     progressMax: 2,
-    hp: 220,
-    damage: 20,
-    speed: 9,
-    range: 5,
-    cooldown: 0.95,
-    color: '#75c66f',
-    accent: '#efffe8',
-    priceGold: 120,
-    priceGems: 16,
-    summary: 'Bloque compacto de defensa con presencia frontal clara y lectura inmediata de unidad resistente.',
+    hp: 118,
+    damage: 34,
+    speed: 13,
+    range: 12,
+    cooldown: 1.2,
+    splashRadius: 10,
+    movement: 'air',
+    attackTarget: 'ground',
+    attackPattern: 'splash',
+    unitClass: 'troop',
+    color: '#ff7070',
+    accent: '#ffe2a3',
+    summary: 'Flying unit with bomb drops that punish clumps and bypass ground-only defenders.',
     art: {
-      silhouette: 'Escudo hexagonal ancho y porra corta sobresaliendo por un lateral.',
-      shape: 'Volumen medio, centro de masa bajo y postura cuadrada.',
-      palette: 'Verde puerto, beige arena y metal apagado para un rol de defensa estable.',
-      iconic: 'Escudo ancho, remaches visibles y casco corto de guardia.',
-      animation: 'Idle casi inmóvil; ataque con pequeño paso al frente y golpe de escudo.',
-      feedback: 'Impacto contundente con polvo bajo y tinte rojo rápido al recibir daño.',
+      silhouette: 'Wing spread, round bomb belly and beak profile visible in one glance.',
+      shape: 'Diamond-like airborne mass with strong top-heavy read.',
+      palette: 'Crimson feathers, gold bomb glow and dark navy shadows.',
+      iconic: 'Bomb satchel, giant beak and wingtip ribbons.',
+      animation: 'Wing flap idle, bomb release dip and fast climb after each drop.',
+      feedback: 'Falling ember, compact blast ring and smoke puff on splash impact.',
       size: '1x2',
-      tone: 'tank',
+      tone: 'damage',
     },
   },
   {
-    id: 'powder',
-    name: 'Powder Burst',
-    role: 'Explosión en área',
-    battleRole: 'Limpieza de enjambre',
-    type: 'spell',
-    target: 'air-ground',
-    rarity: 'Common',
-    cost: 3,
+    id: 'cannon',
+    name: 'Deck Cannon',
+    role: 'Static structure',
+    battleRole: 'Lane denial',
+    type: 'unit',
+    rarity: 'Rare',
+    cost: 4,
     level: 1,
     progress: 0,
     progressMax: 2,
-    damage: 72,
+    hp: 240,
+    damage: 36,
+    speed: 0,
     range: 16,
-    color: '#ff7da3',
-    accent: '#ffe7ef',
-    priceGold: 80,
-    priceGems: 10,
-    summary: 'Hechizo circular de respuesta rápida para romper acumulaciones y castigar apoyos agrupados.',
+    cooldown: 1.15,
+    movement: 'static',
+    attackTarget: 'ground',
+    attackPattern: 'single',
+    unitClass: 'building',
+    color: '#506477',
+    accent: '#b4ddff',
+    summary: 'Static pirate cannon card that locks ground lanes and adds real structure-vs-troop gameplay.',
     art: {
-      silhouette: 'Marcador circular de pólvora con mecha encendida y borde irregular.',
-      shape: 'Forma redonda compacta con centro brillante y humo periférico.',
-      palette: 'Rosa explosivo, naranja pólvora y humo crema para destacar sobre el tablero.',
-      iconic: 'Mecha chispeante, anillo de combustión y nube corta de ceniza.',
-      animation: 'Advertencia en suelo, chispa descendente e impacto esférico con expansión veloz.',
-      feedback: 'Glow intenso, onda exterior y partículas negras con pequeño temblor visual.',
-      size: '1x2',
-      tone: 'spell',
+      silhouette: 'Low wood platform, big cannon mouth and side wheels cropped into a chunky block.',
+      shape: 'Wide static rectangle with a heavy front-loaded barrel.',
+      palette: 'Gunmetal blue, pale cyan highlights and warm oak wood.',
+      iconic: 'Huge barrel rim, rope wraps and recoil frame.',
+      animation: 'Subtle fuse idle and dramatic kickback on fire.',
+      feedback: 'Shell flash, smoke cone and visible recoil frame.',
+      size: '2x2',
+      tone: 'support',
     },
   },
   {
     id: 'brute',
     name: 'Anchor Brute',
-    role: 'Tanque',
-    battleRole: 'Win condition',
+    role: 'Siege tank',
+    battleRole: 'Building hunter',
     type: 'unit',
-    target: 'buildings',
-    rarity: 'Rare',
+    rarity: 'Epic',
     cost: 5,
     level: 1,
     progress: 0,
     progressMax: 2,
-    hp: 320,
-    damage: 40,
+    hp: 336,
+    damage: 48,
     speed: 8,
     range: 5,
-    cooldown: 1.1,
-    color: '#ff8e63',
-    accent: '#ffe0d2',
-    priceGold: 220,
-    priceGems: 24,
-    summary: 'Tanque principal de silueta enorme y objetivo estructural prioritario para abrir la partida.',
+    cooldown: 1.15,
+    movement: 'ground',
+    attackTarget: 'buildings',
+    attackPattern: 'single',
+    unitClass: 'troop',
+    color: '#ff8d60',
+    accent: '#ffe2d1',
+    summary: 'Win-condition bruiser that ignores troops and walks straight for towers or enemy structures.',
     art: {
-      silhouette: 'Masa corporal muy grande con ancla descomunal sobre el hombro.',
-      shape: 'Volumétrico, redondeado y pesado, ocupando lectura de 2x2 tiles.',
-      palette: 'Naranja quemado, hierro oscuro y cuerda arena para un tanque muy reconocible.',
-      iconic: 'Ancla sobredimensionada, brazales metálicos y cinturones gruesos.',
-      animation: 'Pasos lentos y pesados; ataque con elevación larga del ancla y golpe descendente.',
-      feedback: 'Golpe con polvo radial, sacudida breve y flash cálido de alto peso.',
+      silhouette: 'Massive body with a giant anchor raised behind the back.',
+      shape: 'Rounded tank core with a huge diagonal weapon shape cutting across it.',
+      palette: 'Burnt orange, dark iron and rope tan for maximum siege readability.',
+      iconic: 'Oversized anchor, iron bands and sailor straps.',
+      animation: 'Heavy stomp loop and long overhead smash when in range.',
+      feedback: 'Ground shake feel, dust ring and bright orange impact flash.',
       size: '2x2',
       tone: 'tank',
     },
@@ -279,95 +336,62 @@ const cards: Card[] = [
   {
     id: 'siren',
     name: 'Tide Siren',
-    role: 'Maga de rango',
-    battleRole: 'Control de línea',
+    role: 'Ranged splash',
+    battleRole: 'Wave control',
     type: 'unit',
-    target: 'air-ground',
-    rarity: 'Epic',
-    cost: 4,
-    level: 1,
-    progress: 0,
-    progressMax: 2,
-    hp: 150,
-    damage: 24,
-    speed: 10,
-    range: 14,
-    cooldown: 0.82,
-    color: '#8f97ff',
-    accent: '#f0f1ff',
-    priceGold: 0,
-    priceGems: 70,
-    summary: 'Maga estilizada con proyectil acuático para control sostenido y lectura premium.',
-    art: {
-      silhouette: 'Figura curvada con báculo de caracola brillante y velo ondulante.',
-      shape: 'Estilizada, flotante y de eje vertical largo, muy distinta al resto del mazo.',
-      palette: 'Violeta marino, azul claro y blanco nacarado con glow suave.',
-      iconic: 'Báculo con caracola luminosa, cabello flotante y aura marina tenue.',
-      animation: 'Idle con levitación; ataque con compresión de agua y liberación elástica.',
-      feedback: 'Splash pequeño, estela líquida y destello violeta-azulado al impactar.',
-      size: '1x2',
-      tone: 'support',
-    },
-  },
-  {
-    id: 'captain',
-    name: 'Wave Captain',
-    role: 'Líder híbrido',
-    battleRole: 'Presión versátil',
-    type: 'unit',
-    target: 'ground',
     rarity: 'Legendary',
     cost: 4,
     level: 1,
     progress: 0,
     progressMax: 2,
-    hp: 230,
-    damage: 30,
-    speed: 11,
-    range: 8,
+    hp: 156,
+    damage: 26,
+    speed: 10,
+    range: 14,
     cooldown: 0.9,
-    color: '#c99cff',
-    accent: '#f7ecff',
-    priceGold: 0,
-    priceGems: 120,
-    summary: 'Unidad de prestigio con presencia de comandante, perfil híbrido y excelente legibilidad.',
+    splashRadius: 9,
+    movement: 'ground',
+    attackTarget: 'air-ground',
+    attackPattern: 'splash',
+    unitClass: 'troop',
+    color: '#a599ff',
+    accent: '#f2f4ff',
+    summary: 'Support caster whose wave projectiles splash nearby enemies and reset crowded pushes.',
     art: {
-      silhouette: 'Capitán con sable curvo, hombreras amplias y capa corta muy marcada.',
-      shape: 'Intermedia entre tanque y DPS, con torso ancho y arma elegante.',
-      palette: 'Violeta real, dorado viejo y azul profundo para jerarquía visual.',
-      iconic: 'Sable curvo, abrigo corto y emblema dorado en pecho u hombros.',
-      animation: 'Idle con capa agitándose; ataque en corte barrido con estela de agua.',
-      feedback: 'Arco luminoso sutil, chispas acuáticas y golpe de prioridad media.',
+      silhouette: 'Floating hair mass, shell staff and long wave-shaped cape.',
+      shape: 'Elegant S-curve with a tall magical read.',
+      palette: 'Periwinkle, violet glow and pearl highlights.',
+      iconic: 'Shell staff, flowing hair and tidal halo.',
+      animation: 'Levitating idle, charge pulse and whip-like release on cast.',
+      feedback: 'Ripple ring, violet splash and soft energy bloom on impact.',
       size: '1x2',
-      tone: 'damage',
+      tone: 'support',
     },
   },
   {
-    id: 'storm',
-    name: 'Storm Call',
-    role: 'Impacto pesado',
-    battleRole: 'Remate de alto valor',
+    id: 'powder',
+    name: 'Powder Burst',
+    role: 'Area spell',
+    battleRole: 'Swarm punish',
     type: 'spell',
-    target: 'air-ground',
     rarity: 'Epic',
-    cost: 4,
+    cost: 3,
     level: 1,
     progress: 0,
     progressMax: 2,
-    damage: 98,
+    damage: 76,
     range: 16,
-    color: '#7f9dff',
-    accent: '#edf2ff',
-    priceGold: 0,
-    priceGems: 80,
-    summary: 'Hechizo de burst con telegraph muy claro para rematar pushes o cerrar daño sobre torre.',
+    splashRadius: 15,
+    color: '#ff7aa6',
+    accent: '#ffe6ef',
+    summary: 'Fast circular spell with a telegraphed blast built to clear clustered units or soften towers.',
     art: {
-      silhouette: 'Nube compacta con rayo vertical concentrado en el centro de un círculo de aviso.',
-      shape: 'Vertical y focalizada, con lectura de caída puntual y halo eléctrico.',
-      palette: 'Azul tormenta, blanco eléctrico y lila frío con glow intenso.',
-      iconic: 'Rayo central, anillo de electricidad y grieta luminosa residual.',
-      animation: 'Suelo se oscurece, aparecen chispas y cae un rayo con flash de alta prioridad.',
-      feedback: 'Distorsión ligera, residuo eléctrico breve y golpe más brillante que Powder Burst.',
+      silhouette: 'Circular burn marker with a central fuse spark.',
+      shape: 'Round telegraph, uneven smoke ring and explosive center.',
+      palette: 'Hot pink, orange powder and pale ash smoke.',
+      iconic: 'Fuse spark, soot ring and blast bloom.',
+      animation: 'Ground marker, falling spark and abrupt sphere explosion.',
+      feedback: 'Strong flash, shock ring and black cinder particles.',
       size: '1x2',
       tone: 'spell',
     },
@@ -377,33 +401,33 @@ const cards: Card[] = [
 const towerBlueprints: Record<Tower['kind'], TowerBlueprint> = {
   archer: {
     name: 'Princess Tower',
-    role: 'Defensa lateral',
+    role: 'Side defense',
     hp: 420,
     damage: 22,
     range: 18,
     cooldown: 1.1,
-    architecture: 'Base cuadrada de piedra y madera con plataforma abierta y arquera visible.',
-    color: 'Piedra gris/beige con banners y tejado azul o rojo según el equipo.',
-    animation: 'Recoil ligero al disparar y arquera en pose activa constante.',
-    feedback: 'Proyectil visible, impacto corto y barra de vida siempre legible.',
+    architecture: 'Square stone base, open timber deck, exposed archer and bold roof silhouette.',
+    color: 'Neutral stone with team-colored roof, banners and trim.',
+    animation: 'Constant aim pose with a sharp bow recoil when firing.',
+    feedback: 'Visible projectile path, small hit spark and stable health bar.',
   },
   king: {
     name: 'King Tower',
-    role: 'Núcleo central',
+    role: 'Core stronghold',
     hp: 900,
     damage: 28,
     range: 22,
     cooldown: 1.25,
-    architecture: 'Estructura más alta, más ancha y rematada con corona y acentos dorados.',
-    color: 'Piedra neutra reforzada con detalles reales azules o rojos.',
-    animation: 'En reposo se siente pesada; al activarse intensifica el disparo y la presencia visual.',
-    feedback: 'Impacto ligeramente mayor, brillo en corona y lectura jerárquica inmediata.',
+    architecture: 'Taller stone keep with crowned top, heavier base and golden royal trims.',
+    color: 'Stone gray and beige with stronger blue or red team accents.',
+    animation: 'Dormant heavy idle, then more intense firing posture once active.',
+    feedback: 'Brighter muzzle flash, clearer hit pop and stronger hierarchy.',
   },
 }
 
-const initialDeck = ['skipper', 'gunner', 'guard', 'powder', 'brute', 'siren', 'captain', 'storm']
-const initialOwned = ['skipper', 'gunner', 'guard', 'powder', 'brute', 'siren', 'captain', 'storm']
-const botDeck = ['skipper', 'guard', 'gunner', 'powder', 'brute', 'siren', 'captain', 'storm']
+const initialDeck = ['runner', 'gunner', 'bulwark', 'powder', 'parrot', 'cannon', 'brute', 'siren']
+const initialOwned = cards.map((card) => card.id)
+const botDeck = ['runner', 'gunner', 'bulwark', 'parrot', 'cannon', 'brute', 'siren', 'powder']
 
 const rarityClass: Record<Card['rarity'], string> = {
   Common: 'rarity-common',
@@ -438,39 +462,99 @@ function makeTowers(): Tower[] {
   ]
 }
 
+function canHitTarget(attackTarget: AttackTarget, movement: MovementMode) {
+  if (attackTarget === 'air-ground') return true
+  if (attackTarget === 'ground') return movement !== 'air'
+  return false
+}
+
 function getToneLabel(tone: RoleTone) {
   switch (tone) {
     case 'tank':
-      return 'Tanque'
+      return 'Tank'
     case 'damage':
-      return 'Daño'
+      return 'Damage'
     case 'support':
-      return 'Soporte'
+      return 'Support'
     case 'spell':
-      return 'Hechizo'
+      return 'Spell'
   }
 }
 
-function getTargetLabel(target: TargetType) {
+function getTargetLabel(target: AttackTarget | undefined) {
+  if (!target) return 'Spell'
   switch (target) {
     case 'ground':
-      return 'Tierra'
+      return 'Ground'
     case 'air-ground':
-      return 'Aire y tierra'
+      return 'Air and ground'
     case 'buildings':
-      return 'Estructuras'
+      return 'Buildings only'
   }
+}
+
+function getMovementLabel(movement: MovementMode | undefined) {
+  if (!movement) return 'Instant'
+  switch (movement) {
+    case 'ground':
+      return 'Ground'
+    case 'air':
+      return 'Air'
+    case 'static':
+      return 'Static'
+  }
+}
+
+function getPatternLabel(pattern: AttackPattern | undefined) {
+  if (!pattern) return 'Burst'
+  return pattern === 'single' ? 'Single target' : 'Area splash'
+}
+
+function CardArt({ card, battle = false }: { card: Card; battle?: boolean }) {
+  return (
+    <div className={`card-portrait ${battle ? 'battle' : ''} art-${card.id}`}>
+      <div className="art-sky" />
+      <div className="art-glow" />
+      <div className="art-shadow" />
+      <div className="art-body" />
+      <div className="art-head" />
+      <div className="art-weapon" />
+      <div className="art-trim" />
+      <div className="art-effect" />
+    </div>
+  )
+}
+
+function TowerVisual({ tower, preview = false }: { tower: Tower | TowerBlueprint; preview?: boolean }) {
+  const kind = 'kind' in tower ? tower.kind : tower.name.includes('King') ? 'king' : 'archer'
+  const sideClass = preview ? `preview-${kind}` : 'side' in tower ? tower.side : 'player'
+
+  return (
+    <div className={`tower-node ${kind} ${sideClass} ${preview ? 'tower-preview' : ''}`}>
+      <div className="tower-shadow" />
+      <div className="tower-base" />
+      <div className="tower-body">
+        <div className="tower-roof" />
+        <div className="tower-window" />
+        <div className="tower-banner" />
+        {kind === 'archer' ? <div className="tower-archer" /> : <div className="tower-crown" />}
+      </div>
+    </div>
+  )
+}
+
+function sortByDistance<T extends { x: number; y: number }>(source: { x: number; y: number }, items: T[]) {
+  return [...items].sort((a, b) => Math.hypot(a.x - source.x, a.y - source.y) - Math.hypot(b.x - source.x, b.y - source.y))
 }
 
 export default function HomePage() {
   const [tab, setTab] = useState<Tab>('battle')
   const [screen, setScreen] = useState<Screen>('home')
   const [account, setAccount] = useState<Account>({ name: 'New Pirate', level: 1, gold: 0, gems: 0, trophies: 0 })
-  const [owned, setOwned] = useState<string[]>(initialOwned)
+  const [owned] = useState<string[]>(initialOwned)
   const [deck, setDeck] = useState<string[]>(initialDeck)
   const [selectedDeckSlot, setSelectedDeckSlot] = useState(0)
   const [selectedCardId, setSelectedCardId] = useState(deck[0])
-  const [shopSelection, setShopSelection] = useState(0)
   const [dragState, setDragState] = useState<DragState | null>(null)
   const [towers, setTowers] = useState<Tower[]>(makeTowers())
   const [units, setUnits] = useState<Unit[]>([])
@@ -517,14 +601,8 @@ export default function HomePage() {
   const visibleDeck = useMemo(() => deck.map((cardId) => getCard(cardId)), [deck])
   const battleHand = useMemo(() => deck.slice(0, 4).map((cardId) => getCard(cardId)), [deck])
   const ownedCards = useMemo(() => cards.filter((card) => owned.includes(card.id)), [owned])
-  const shopCards = useMemo(() => cards.filter((card) => !owned.includes(card.id)), [owned])
-  const selectedShopCard = shopCards[shopSelection] ?? null
   const selectedDetailCard = getCard(selectedCardId)
   const averageElixir = useMemo(() => (visibleDeck.reduce((sum, card) => sum + card.cost, 0) / visibleDeck.length).toFixed(1), [visibleDeck])
-  const selectedShopCost =
-    selectedShopCard?.priceGold && selectedShopCard.priceGold > 0
-      ? `${selectedShopCard.priceGold} oro`
-      : `${selectedShopCard?.priceGems ?? 0} gemas`
 
   const resetBattle = () => {
     setTowers(makeTowers())
@@ -542,20 +620,6 @@ export default function HomePage() {
     setScreen('battle')
   }
 
-  const buySelectedCard = () => {
-    if (!selectedShopCard) return
-    if (selectedShopCard.priceGold > 0 && account.gold < selectedShopCard.priceGold) return
-    if (selectedShopCard.priceGems > 0 && account.gems < selectedShopCard.priceGems) return
-
-    setAccount((current) => ({
-      ...current,
-      gold: current.gold - selectedShopCard.priceGold,
-      gems: current.gems - selectedShopCard.priceGems,
-    }))
-    setOwned((current) => [...current, selectedShopCard.id])
-    setShopSelection(0)
-  }
-
   const swapDeckCard = (cardId: string) => {
     setDeck((current) => current.map((value, index) => (index === selectedDeckSlot ? cardId : value)))
     setSelectedCardId(cardId)
@@ -565,12 +629,14 @@ export default function HomePage() {
     const card = getCard(cardId)
 
     if (card.type === 'spell') {
+      const radius = card.splashRadius ?? 14
+
       setUnits((current) =>
         current
           .map((unit) => {
             if (unit.side === side) return unit
             const distance = Math.hypot(unit.x - x, unit.y - y)
-            return distance <= 16 ? { ...unit, hp: unit.hp - card.damage } : unit
+            return distance <= radius ? { ...unit, hp: unit.hp - card.damage } : unit
           })
           .filter((unit) => unit.hp > 0)
       )
@@ -579,7 +645,7 @@ export default function HomePage() {
         current.map((tower) => {
           if (tower.side === side) return tower
           const distance = Math.hypot(tower.x - x, tower.y - y)
-          return distance <= 18 ? { ...tower, hp: Math.max(0, tower.hp - Math.round(card.damage * 0.68)) } : tower
+          return distance <= radius + 2 ? { ...tower, hp: Math.max(0, tower.hp - Math.round(card.damage * 0.65)) } : tower
         })
       )
       return
@@ -589,21 +655,26 @@ export default function HomePage() {
       ...current,
       {
         id: unitIdRef.current++,
+        cardId: card.id,
         side,
         x,
         y,
         hp: card.hp ?? 100,
         maxHp: card.hp ?? 100,
         damage: card.damage,
-        speed: card.speed ?? 10,
+        speed: card.speed ?? 0,
         range: card.range ?? 6,
         cooldown: card.cooldown ?? 1,
         attackTimer: 0,
+        splashRadius: card.splashRadius ?? 0,
+        movement: card.movement ?? 'ground',
+        attackTarget: card.attackTarget ?? 'ground',
+        attackPattern: card.attackPattern ?? 'single',
+        unitClass: card.unitClass ?? 'troop',
         color: card.color,
         accent: card.accent,
         name: card.name,
         role: card.role,
-        target: card.target,
         tone: card.art.tone,
         size: card.art.size,
       },
@@ -655,6 +726,62 @@ export default function HomePage() {
     setDragState(null)
   }
 
+  const chooseTarget = (attacker: Unit, allUnits: Unit[], allTowers: Tower[]): TargetRef | null => {
+    const enemyUnits = allUnits.filter((unit) => {
+      if (unit.side === attacker.side) return false
+      if (attacker.attackTarget === 'buildings') return unit.unitClass === 'building'
+      return canHitTarget(attacker.attackTarget, unit.movement)
+    })
+    const enemyTowers = allTowers.filter((tower) => tower.side !== attacker.side && tower.hp > 0)
+
+    const sortedUnits = sortByDistance(attacker, enemyUnits)
+    const sortedTowers = sortByDistance(attacker, enemyTowers)
+
+    if (attacker.attackTarget === 'buildings') {
+      const buildingUnit = sortedUnits.find((unit) => unit.unitClass === 'building')
+      if (buildingUnit) return { kind: 'unit', id: buildingUnit.id, x: buildingUnit.x, y: buildingUnit.y }
+      const tower = sortedTowers[0]
+      return tower ? { kind: 'tower', id: tower.id, x: tower.x, y: tower.y } : null
+    }
+
+    const troopTarget = sortedUnits.find((unit) => unit.unitClass === 'troop') ?? sortedUnits[0]
+    if (troopTarget) return { kind: 'unit', id: troopTarget.id, x: troopTarget.x, y: troopTarget.y }
+
+    const buildingTarget = sortedUnits.find((unit) => unit.unitClass === 'building')
+    if (buildingTarget) return { kind: 'unit', id: buildingTarget.id, x: buildingTarget.x, y: buildingTarget.y }
+
+    const tower = sortedTowers[0]
+    return tower ? { kind: 'tower', id: tower.id, x: tower.x, y: tower.y } : null
+  }
+
+  const applySplashDamage = (
+    attacker: Unit,
+    target: TargetRef,
+    allUnits: Unit[],
+    unitDamage: Map<number, number>,
+    towerDamage: Map<string, number>
+  ) => {
+    if (attacker.attackPattern !== 'splash' || attacker.splashRadius <= 0) return
+
+    for (const enemy of allUnits) {
+      if (enemy.side === attacker.side) continue
+      if (enemy.id === (target.kind === 'unit' ? target.id : -1)) continue
+      if (!canHitTarget(attacker.attackTarget === 'buildings' ? 'ground' : attacker.attackTarget, enemy.movement)) continue
+      if (Math.hypot(enemy.x - target.x, enemy.y - target.y) <= attacker.splashRadius) {
+        unitDamage.set(enemy.id, (unitDamage.get(enemy.id) ?? 0) + Math.round(attacker.damage * 0.65))
+      }
+    }
+
+    if (target.kind === 'unit') {
+      for (const tower of towersRef.current) {
+        if (tower.side === attacker.side || tower.hp <= 0) continue
+        if (Math.hypot(tower.x - target.x, tower.y - target.y) <= attacker.splashRadius) {
+          towerDamage.set(tower.id, (towerDamage.get(tower.id) ?? 0) + Math.round(attacker.damage * 0.35))
+        }
+      }
+    }
+  }
+
   useEffect(() => {
     if (screen !== 'battle' || result) return
 
@@ -662,7 +789,7 @@ export default function HomePage() {
       const delta = 0.1
       setTimeLeft((current) => Math.max(0, current - delta))
 
-      const regen = timeRef.current <= 30 ? 0.82 : 0.42
+      const regen = timeRef.current <= 30 ? 0.88 : 0.45
       setPlayerEnergy((current) => clamp(current + regen * delta, 0, maxEnergy))
       setBotEnergy((current) => clamp(current + regen * delta, 0, maxEnergy))
 
@@ -672,44 +799,31 @@ export default function HomePage() {
         const towerDamage = new Map<string, number>()
 
         for (const unit of updated) {
-          const enemyUnits = updated
-            .filter((other) => other.side !== unit.side)
-            .sort((a, b) => Math.hypot(a.x - unit.x, a.y - unit.y) - Math.hypot(b.x - unit.x, b.y - unit.y))
+          const target = chooseTarget(unit, updated, towersRef.current)
+          if (!target) continue
 
-          const enemyTowers = towersRef.current
-            .filter((tower) => tower.side !== unit.side && tower.hp > 0)
-            .sort((a, b) => Math.hypot(a.x - unit.x, a.y - unit.y) - Math.hypot(b.x - unit.x, b.y - unit.y))
+          const distance = Math.hypot(target.x - unit.x, target.y - unit.y)
 
-          const targetUnit = unit.target === 'buildings' ? undefined : enemyUnits[0]
-          const targetTower = enemyTowers[0]
-
-          if (targetUnit && Math.hypot(targetUnit.x - unit.x, targetUnit.y - unit.y) <= unit.range) {
+          if (distance <= unit.range) {
             if (unit.attackTimer <= 0) {
-              unitDamage.set(targetUnit.id, (unitDamage.get(targetUnit.id) ?? 0) + unit.damage)
+              if (target.kind === 'unit') {
+                unitDamage.set(target.id, (unitDamage.get(target.id) ?? 0) + unit.damage)
+              } else {
+                towerDamage.set(target.id, (towerDamage.get(target.id) ?? 0) + unit.damage)
+              }
+              applySplashDamage(unit, target, updated, unitDamage, towerDamage)
               unit.attackTimer = unit.cooldown
             }
             continue
           }
 
-          if (targetTower && Math.hypot(targetTower.x - unit.x, targetTower.y - unit.y) <= unit.range) {
-            if (unit.attackTimer <= 0) {
-              towerDamage.set(targetTower.id, (towerDamage.get(targetTower.id) ?? 0) + unit.damage)
-              unit.attackTimer = unit.cooldown
-            }
-            continue
-          }
+          if (unit.movement === 'static') continue
 
-          const focus = targetTower ?? targetUnit
-          if (focus) {
-            const dx = focus.x - unit.x
-            const dy = focus.y - unit.y
-            const distance = Math.hypot(dx, dy) || 1
-            unit.x = clamp(unit.x + (dx / distance) * unit.speed * delta, 6, 94)
-            unit.y = clamp(unit.y + (dy / distance) * unit.speed * delta, 6, 94)
-          } else {
-            const direction = unit.side === 'player' ? -1 : 1
-            unit.y = clamp(unit.y + unit.speed * delta * direction, 6, 94)
-          }
+          const dx = target.x - unit.x
+          const dy = target.y - unit.y
+          const norm = Math.hypot(dx, dy) || 1
+          unit.x = clamp(unit.x + (dx / norm) * unit.speed * delta, 6, 94)
+          unit.y = clamp(unit.y + (dy / norm) * unit.speed * delta, 6, 94)
         }
 
         if (towerDamage.size > 0) {
@@ -731,9 +845,11 @@ export default function HomePage() {
 
         for (const tower of updated) {
           if (tower.hp <= 0 || tower.attackTimer > 0) continue
-          const target = unitsRef.current
-            .filter((unit) => unit.side !== tower.side)
-            .sort((a, b) => Math.hypot(a.x - tower.x, a.y - tower.y) - Math.hypot(b.x - tower.x, b.y - tower.y))[0]
+
+          const target = sortByDistance(
+            tower,
+            unitsRef.current.filter((unit) => unit.side !== tower.side)
+          )[0]
 
           if (target && Math.hypot(target.x - tower.x, target.y - tower.y) <= tower.range) {
             unitDamage.set(target.id, (unitDamage.get(target.id) ?? 0) + tower.damage)
@@ -753,7 +869,7 @@ export default function HomePage() {
       })
 
       botThinkRef.current += delta
-      if (botThinkRef.current >= 2.3) {
+      if (botThinkRef.current >= 2.2) {
         botThinkRef.current = 0
         const playable = botDeck.map(getCard).filter((card) => card.cost <= botEnergyRef.current)
         if (playable.length > 0) {
@@ -775,12 +891,12 @@ export default function HomePage() {
     const playerKing = towers.find((tower) => tower.id === 'player-king')?.hp ?? 0
     const botKing = towers.find((tower) => tower.id === 'bot-king')?.hp ?? 0
 
-    if (playerKing <= 0) setResult('Derrota')
-    else if (botKing <= 0) setResult('Victoria')
+    if (playerKing <= 0) setResult('Defeat')
+    else if (botKing <= 0) setResult('Victory')
     else if (timeLeft <= 0) {
       const playerScore = towers.filter((tower) => tower.side === 'player').reduce((sum, tower) => sum + tower.hp, 0)
       const botScore = towers.filter((tower) => tower.side === 'bot').reduce((sum, tower) => sum + tower.hp, 0)
-      setResult(playerScore >= botScore ? 'Victoria a tiempo' : 'Derrota a tiempo')
+      setResult(playerScore >= botScore ? 'Time win' : 'Time loss')
     }
   }, [screen, result, towers, timeLeft])
 
@@ -789,30 +905,30 @@ export default function HomePage() {
       <main className="phone-shell battle-shell">
         <header className="battle-hud">
           <div className="hud-player enemy">
-            <strong>Rival</strong>
-            <span>0 coronas</span>
+            <strong>Rival Fleet</strong>
+            <span>Mixed deck</span>
           </div>
           <div className="hud-center">
             <strong>{formatTime(timeLeft)}</strong>
-            <span>{result ?? 'Práctica'}</span>
+            <span>{result ?? 'Live combat'}</span>
           </div>
           <div className="hud-player">
             <strong>{account.name}</strong>
-            <span>0 coronas</span>
+            <span>Prototype Arena</span>
           </div>
         </header>
 
         <section className="battle-arena-card">
           <div className="king-bar enemy">
-            <span>Torre del Rey rival</span>
+            <span>Enemy King Tower</span>
             <div className="health-bar"><i style={{ width: `${((towers.find((tower) => tower.id === 'bot-king')?.hp ?? 0) / 900) * 100}%` }} /></div>
           </div>
 
           <div className="arena-board" ref={arenaRef}>
-            <div className="arena-atmosphere" />
-            <div className="arena-half enemy-half" />
+            <div className="arena-sun" />
             <div className="arena-river" />
-            <div className="arena-half player-half" />
+            <div className="arena-deckline top" />
+            <div className="arena-deckline bottom" />
             <div className="bridge left-bridge" />
             <div className="bridge right-bridge" />
 
@@ -825,39 +941,37 @@ export default function HomePage() {
             </div>
 
             {towers.map((tower) => (
-              <div className={`tower-node ${tower.side} ${tower.kind}`} key={tower.id} style={{ left: `${tower.x}%`, top: `${tower.y}%` }}>
-                <div className="tower-shadow" />
-                <div className="tower-crown" />
-                <div className="tower-body">
-                  <div className="tower-window" />
-                  {tower.kind === 'archer' ? <div className="tower-archer" /> : <div className="tower-emblem" />}
-                </div>
+              <div className="battle-tower" key={tower.id} style={{ left: `${tower.x}%`, top: `${tower.y}%` }}>
+                <TowerVisual tower={tower} />
                 <div className="tower-hp"><i style={{ width: `${(tower.hp / tower.maxHp) * 100}%` }} /></div>
               </div>
             ))}
 
-            {units.map((unit) => (
-              <div className={`unit-node ${unit.side} tone-${unit.tone} size-${unit.size.replace('x', '-')}`} key={unit.id} style={{ left: `${unit.x}%`, top: `${unit.y}%` }}>
-                <div className="unit-ring" />
-                <div className="unit-card-portrait" style={{ background: `linear-gradient(180deg, ${unit.color}, ${unit.accent})` }}>
-                  <div className="character-head" />
-                  <div className="character-body" />
-                  <div className="character-gear" />
+            {units.map((unit) => {
+              const unitCard = getCard(unit.cardId)
+
+              return (
+                <div className={`unit-node ${unit.side} tone-${unit.tone} size-${unit.size.replace('x', '-')} move-${unit.movement}`} key={unit.id} style={{ left: `${unit.x}%`, top: `${unit.y}%` }}>
+                  <div className="unit-ring" />
+                  <div className="unit-card-shell">
+                    <CardArt card={unitCard} battle />
+                  </div>
+                  <div className="unit-label">{unit.name}</div>
+                  <div className="unit-hp"><i style={{ width: `${(unit.hp / unit.maxHp) * 100}%` }} /></div>
                 </div>
-                <div className="unit-hp"><i style={{ width: `${(unit.hp / unit.maxHp) * 100}%` }} /></div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <div className="king-bar player">
-            <span>Torre del Rey</span>
+            <span>Your King Tower</span>
             <div className="health-bar"><i style={{ width: `${((towers.find((tower) => tower.id === 'player-king')?.hp ?? 0) / 900) * 100}%` }} /></div>
           </div>
         </section>
 
         <section className="battle-bottom">
           <div className="elixir-panel">
-            <span>Elixir</span>
+            <span>Elixir flow</span>
             <strong>{playerEnergy.toFixed(1)} / 10</strong>
             <div className="elixir-bar"><i style={{ width: `${(playerEnergy / maxEnergy) * 100}%` }} /></div>
           </div>
@@ -874,20 +988,17 @@ export default function HomePage() {
               >
                 <div className="hand-cost">{card.cost}</div>
                 <div className="card-frame">
-                  <div className="card-portrait battle" style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
-                    <div className="character-head" />
-                    <div className="character-body" />
-                    <div className="character-gear" />
-                  </div>
+                  <CardArt card={card} battle />
                 </div>
                 <strong>{card.name}</strong>
                 <span className="hand-role">{card.battleRole}</span>
+                <span className="hand-meta">{getPatternLabel(card.attackPattern)} · {getTargetLabel(card.attackTarget)}</span>
               </button>
             ))}
           </div>
 
           <button className="exit-battle" onClick={() => setScreen('home')} type="button">
-            Salir
+            Back to base
           </button>
         </section>
 
@@ -896,14 +1007,9 @@ export default function HomePage() {
             <div className={`hand-card ghost ${rarityClass[battleHand[dragState.cardIndex].rarity]} tone-${battleHand[dragState.cardIndex].art.tone}`}>
               <div className="hand-cost">{battleHand[dragState.cardIndex].cost}</div>
               <div className="card-frame">
-                <div className="card-portrait battle" style={{ background: `linear-gradient(180deg, ${battleHand[dragState.cardIndex].color}, ${battleHand[dragState.cardIndex].accent})` }}>
-                  <div className="character-head" />
-                  <div className="character-body" />
-                  <div className="character-gear" />
-                </div>
+                <CardArt card={battleHand[dragState.cardIndex]} battle />
               </div>
               <strong>{battleHand[dragState.cardIndex].name}</strong>
-              <span className="hand-role">{battleHand[dragState.cardIndex].battleRole}</span>
             </div>
           </div>
         ) : null}
@@ -921,17 +1027,17 @@ export default function HomePage() {
               <div className="profile-level">{account.level}</div>
             </div>
             <div className="arena-panel">
-              <strong>Arena Inicial</strong>
-              <span>{account.trophies} trofeos</span>
+              <strong>Pirates Card Battle</strong>
+              <span>{account.trophies} trophies</span>
             </div>
             <div className="resources-panel">
-              <div><span>Oro</span><strong>{account.gold}</strong></div>
-              <div><span>Gemas</span><strong>{account.gems}</strong></div>
+              <div><span>Gold</span><strong>{account.gold}</strong></div>
+              <div><span>Gems</span><strong>{account.gems}</strong></div>
             </div>
           </header>
 
           <div className="account-card">
-            <span>Cuenta</span>
+            <span>Captain name</span>
             <input
               className="name-input"
               onChange={(event) => setAccount((current) => ({ ...current, name: event.target.value || 'New Pirate' }))}
@@ -940,118 +1046,49 @@ export default function HomePage() {
           </div>
 
           <div className="section-block">
-            <h2>Sistema visual</h2>
+            <h2>Combat pillars</h2>
             <div className="system-grid">
               <article className="system-chip">
-                <strong>Silueta</strong>
-                <span>Reconocimiento en menos de 300 ms por forma y postura.</span>
+                <strong>Melee and range</strong>
+                <span>Runner and Bulwark fight up close while Gunner and Siren control space from distance.</span>
               </article>
               <article className="system-chip">
-                <strong>Color</strong>
-                <span>Tanque oscuro, daño cálido, soporte frío y hechizo brillante.</span>
+                <strong>Air layer</strong>
+                <span>Bomb Parrot forces anti-air answers and cannot be hit by ground-only cards.</span>
               </article>
               <article className="system-chip">
-                <strong>Animación</strong>
-                <span>Anticipación, impacto y recuperación en cada acción relevante.</span>
+                <strong>Static structures</strong>
+                <span>Deck Cannon creates real defensive anchor points that troops must respect.</span>
               </article>
               <article className="system-chip">
-                <strong>Escala</strong>
-                <span>Unidades entre 1x1 y 2x2 tiles con masa clara según su rol.</span>
+                <strong>Area attacks</strong>
+                <span>Powder Burst, Bomb Parrot and Tide Siren punish clustered pushes with splash damage.</span>
               </article>
             </div>
           </div>
 
           <div className="section-block">
-            <h2>Mazo activo</h2>
+            <h2>Active deck</h2>
             <div className="deck-strip">
               {visibleDeck.map((card, index) => (
                 <article className={`deck-home-card ${rarityClass[card.rarity]} tone-${card.art.tone}`} key={`${card.id}-${index}`}>
                   <div className="card-frame">
-                    <div className="card-portrait" style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
-                      <div className="character-head" />
-                      <div className="character-body" />
-                      <div className="character-gear" />
-                    </div>
+                    <CardArt card={card} />
                   </div>
-                  <span>Nv {card.level}</span>
+                  <span>{card.cost} elixir</span>
                 </article>
               ))}
             </div>
-            <div className="average-elixir">Coste medio de elixir: {averageElixir}</div>
+            <div className="average-elixir">Average elixir: {averageElixir}</div>
           </div>
 
-          <button className="battle-button" onClick={openBattle} type="button">Batalla</button>
-          <div className="battle-subnote">El modo práctica sirve para probar lectura visual y ritmo de combate.</div>
+          <button className="battle-button" onClick={openBattle} type="button">Launch battle</button>
+          <div className="battle-subnote">This sandbox now supports melee, ranged, air, structures, building-only pressure and splash attacks.</div>
         </section>
-      ) : tab === 'shop' ? (
+      ) : tab === 'cards' ? (
         <section className="page-panel">
           <div className="section-block">
-            <h2>Ofertas especiales</h2>
-            <div className="offer-banner">
-              <div className="offer-glow" />
-              <strong>Pack fundador</strong>
-              <span>Las cartas ya nacen con identidad visual fuerte y diferenciación inmediata por rol.</span>
-            </div>
-          </div>
-
-          <div className="section-block">
-            <h2>Torres</h2>
-            <div className="tower-blueprints">
-              {Object.entries(towerBlueprints).map(([key, tower]) => (
-                <article className={`tower-card tone-${key === 'king' ? 'tank' : 'support'}`} key={key}>
-                  <div className={`tower-preview ${key}`}>
-                    <div className="tower-shadow" />
-                    <div className="tower-crown" />
-                    <div className="tower-body">
-                      <div className="tower-window" />
-                      {key === 'archer' ? <div className="tower-archer" /> : <div className="tower-emblem" />}
-                    </div>
-                  </div>
-                  <div className="tower-copy">
-                    <strong>{tower.name}</strong>
-                    <span>{tower.role}</span>
-                    <p>{tower.architecture}</p>
-                    <div className="tower-stats">
-                      <span>HP {tower.hp}</span>
-                      <span>Daño {tower.damage}</span>
-                      <span>Rango {tower.range}</span>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <div className="section-block">
-            <h2>Cartas diarias</h2>
-            <div className="entry-list">
-              {shopCards.map((card, index) => (
-                <button
-                  className={`store-entry ${shopSelection === index ? 'store-entry-active' : ''}`}
-                  key={card.id}
-                  onClick={() => setShopSelection(index)}
-                  type="button"
-                >
-                  <div className={`mini-card-art ${rarityClass[card.rarity]}`} style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
-                    <div className="character-head" />
-                    <div className="character-body" />
-                    <div className="character-gear" />
-                  </div>
-                  <div className="entry-copy">
-                    <strong>{card.name}</strong>
-                    <span>{card.rarity}</span>
-                  </div>
-                  <b>{card.priceGold > 0 ? `${card.priceGold} oro` : `${card.priceGems} gemas`}</b>
-                </button>
-              ))}
-            </div>
-            {selectedShopCard ? <button className="buy-main" onClick={buySelectedCard} type="button">Comprar {selectedShopCard.name} · {selectedShopCost}</button> : null}
-          </div>
-        </section>
-      ) : (
-        <section className="page-panel">
-          <div className="section-block">
-            <h2>Mazo activo</h2>
+            <h2>Deck editor</h2>
             <div className="deck-edit-grid">
               {visibleDeck.map((card, index) => (
                 <button
@@ -1064,29 +1101,20 @@ export default function HomePage() {
                   type="button"
                 >
                   <div className="card-frame">
-                    <div className="card-portrait" style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
-                      <div className="character-head" />
-                      <div className="character-body" />
-                      <div className="character-gear" />
-                    </div>
+                    <CardArt card={card} />
                   </div>
-                  <span>{card.level}</span>
+                  <span>{card.cost}</span>
                 </button>
               ))}
             </div>
-            <div className="average-elixir">Coste medio de elixir: {averageElixir}</div>
           </div>
 
           <div className="section-block">
-            <h2>Detalle</h2>
+            <h2>Selected card</h2>
             <article className={`detail-card ${rarityClass[selectedDetailCard.rarity]} tone-${selectedDetailCard.art.tone}`}>
               <div className="detail-head">
-                <div className="card-frame">
-                  <div className="card-portrait large" style={{ background: `linear-gradient(180deg, ${selectedDetailCard.color}, ${selectedDetailCard.accent})` }}>
-                    <div className="character-head" />
-                    <div className="character-body" />
-                    <div className="character-gear" />
-                  </div>
+                <div className="card-frame large-frame">
+                  <CardArt card={selectedDetailCard} />
                 </div>
                 <div>
                   <strong>{selectedDetailCard.name}</strong>
@@ -1097,35 +1125,36 @@ export default function HomePage() {
               <div className="tag-row">
                 <span className="tag">{selectedDetailCard.role}</span>
                 <span className="tag">{selectedDetailCard.battleRole}</span>
-                <span className="tag">{getToneLabel(selectedDetailCard.art.tone)}</span>
-                <span className="tag">{getTargetLabel(selectedDetailCard.target)}</span>
+                <span className="tag">{getMovementLabel(selectedDetailCard.movement)}</span>
+                <span className="tag">{getTargetLabel(selectedDetailCard.attackTarget)}</span>
+                <span className="tag">{getPatternLabel(selectedDetailCard.attackPattern)}</span>
                 <span className="tag">{selectedDetailCard.art.size}</span>
               </div>
 
               <div className="stats-grid">
-                <span>Daño: {selectedDetailCard.damage}</span>
-                <span>Vida: {selectedDetailCard.hp ?? '-'}</span>
-                <span>Velocidad: {selectedDetailCard.speed ?? '-'}</span>
-                <span>Rango: {selectedDetailCard.range ?? '-'}</span>
+                <span>Damage: {selectedDetailCard.damage}</span>
+                <span>HP: {selectedDetailCard.hp ?? '-'}</span>
+                <span>Speed: {selectedDetailCard.speed ?? '-'}</span>
+                <span>Range: {selectedDetailCard.range ?? '-'}</span>
                 <span>Cooldown: {selectedDetailCard.cooldown ?? '-'}</span>
-                <span>Coste: {selectedDetailCard.cost}</span>
+                <span>Splash: {selectedDetailCard.splashRadius ?? '-'}</span>
               </div>
 
               <div className="lore-grid">
                 <article>
-                  <strong>Silueta y forma</strong>
+                  <strong>Silhouette and shape</strong>
                   <p>{selectedDetailCard.art.silhouette} {selectedDetailCard.art.shape}</p>
                 </article>
                 <article>
-                  <strong>Color y lectura</strong>
+                  <strong>Palette and hierarchy</strong>
                   <p>{selectedDetailCard.art.palette}</p>
                 </article>
                 <article>
-                  <strong>Detalles y animación</strong>
+                  <strong>Iconics and motion</strong>
                   <p>{selectedDetailCard.art.iconic} {selectedDetailCard.art.animation}</p>
                 </article>
                 <article>
-                  <strong>Feedback visual</strong>
+                  <strong>Feedback</strong>
                   <p>{selectedDetailCard.art.feedback}</p>
                 </article>
               </div>
@@ -1133,7 +1162,7 @@ export default function HomePage() {
           </div>
 
           <div className="section-block">
-            <h2>Colección</h2>
+            <h2>Collection</h2>
             <div className="entry-list">
               {ownedCards.map((card) => (
                 <button
@@ -1145,10 +1174,8 @@ export default function HomePage() {
                   }}
                   type="button"
                 >
-                  <div className="mini-card-art" style={{ background: `linear-gradient(180deg, ${card.color}, ${card.accent})` }}>
-                    <div className="character-head" />
-                    <div className="character-body" />
-                    <div className="character-gear" />
+                  <div className="mini-card-wrap">
+                    <CardArt card={card} />
                   </div>
                   <div className="entry-copy">
                     <strong>{card.name}</strong>
@@ -1161,12 +1188,60 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+      ) : (
+        <section className="page-panel">
+          <div className="section-block">
+            <h2>Tower bible</h2>
+            <div className="tower-blueprints">
+              {Object.entries(towerBlueprints).map(([key, tower]) => (
+                <article className={`tower-card tone-${key === 'king' ? 'tank' : 'support'}`} key={key}>
+                  <div className="tower-preview-wrap">
+                    <TowerVisual tower={tower} preview />
+                  </div>
+                  <div className="tower-copy">
+                    <strong>{tower.name}</strong>
+                    <span>{tower.role}</span>
+                    <p>{tower.architecture}</p>
+                    <div className="tower-stats">
+                      <span>HP {tower.hp}</span>
+                      <span>DMG {tower.damage}</span>
+                      <span>RNG {tower.range}</span>
+                    </div>
+                    <p>{tower.animation} {tower.feedback}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className="section-block">
+            <h2>Targeting rules</h2>
+            <div className="system-grid">
+              <article className="system-chip">
+                <strong>Ground only</strong>
+                <span>Runner, Bulwark and Deck Cannon cannot hit Bomb Parrot.</span>
+              </article>
+              <article className="system-chip">
+                <strong>Air and ground</strong>
+                <span>Coral Gunner and Tide Siren can answer both layers.</span>
+              </article>
+              <article className="system-chip">
+                <strong>Building hunter</strong>
+                <span>Anchor Brute ignores troops and walks into towers or static buildings.</span>
+              </article>
+              <article className="system-chip">
+                <strong>Area pressure</strong>
+                <span>Powder Burst, Bomb Parrot and Tide Siren create real anti-clump decisions.</span>
+              </article>
+            </div>
+          </div>
+        </section>
       )}
 
       <nav className="bottom-nav">
-        <button className={tab === 'shop' ? 'active' : ''} onClick={() => setTab('shop')} type="button"><span className="nav-icon">◈</span><strong>Tienda</strong></button>
-        <button className={tab === 'battle' ? 'active' : ''} onClick={() => setTab('battle')} type="button"><span className="nav-icon">⚔</span><strong>Batalla</strong></button>
-        <button className={tab === 'cards' ? 'active' : ''} onClick={() => setTab('cards')} type="button"><span className="nav-icon">▣</span><strong>Cartas</strong></button>
+        <button className={tab === 'battle' ? 'active' : ''} onClick={() => setTab('battle')} type="button"><span className="nav-icon">ATK</span><strong>Battle</strong></button>
+        <button className={tab === 'cards' ? 'active' : ''} onClick={() => setTab('cards')} type="button"><span className="nav-icon">CRD</span><strong>Cards</strong></button>
+        <button className={tab === 'intel' ? 'active' : ''} onClick={() => setTab('intel')} type="button"><span className="nav-icon">TWR</span><strong>Towers</strong></button>
       </nav>
     </main>
   )
