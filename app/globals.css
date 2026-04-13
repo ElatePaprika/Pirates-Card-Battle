@@ -500,49 +500,49 @@ button {
   overflow: hidden;
   border-radius: 26px;
   background:
-    linear-gradient(180deg, #4fa0ef 0%, #2d78d0 47%, #aee0ff 48%, #76cfff 52%, #3f8f43 53%, #4ca950 100%);
+    linear-gradient(180deg, #3f9346 0%, #4daf55 45%, #9fe5ff 46%, #6dccff 54%, #4daf55 55%, #3f9346 100%);
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .lane-zone,
 .river-band {
   position: absolute;
-  left: 0;
-  right: 0;
+  top: 0;
+  bottom: 0;
 }
 
 .top-zone {
-  top: 0;
-  height: 46%;
+  left: 0;
+  width: 44%;
 }
 
 .river-band {
-  top: 46%;
-  height: 8%;
-  background: linear-gradient(180deg, #b3eeff, #7dd6ff);
+  left: 44%;
+  width: 12%;
+  background: linear-gradient(90deg, #b3eeff, #7dd6ff);
 }
 
 .bottom-zone {
-  bottom: 0;
-  height: 46%;
+  right: 0;
+  width: 44%;
 }
 
 .bridge {
   position: absolute;
-  top: 50%;
-  width: 74px;
-  height: 22px;
+  left: 50%;
+  width: 22px;
+  height: 74px;
   border-radius: 999px;
   background: linear-gradient(180deg, #dec07c, #b38339);
-  transform: translateY(-50%);
+  transform: translateX(-50%);
 }
 
 .left-bridge {
-  left: 25%;
+  top: 22%;
 }
 
 .right-bridge {
-  right: 25%;
+  bottom: 22%;
 }
 
 .tower-node,
@@ -608,12 +608,14 @@ button {
   font-size: 0.72rem;
 }
 
-.drop-hint.top {
-  top: 35%;
+.drop-hint.left-drop {
+  left: 28%;
+  top: 50%;
 }
 
-.drop-hint.bottom {
-  top: 67%;
+.drop-hint.right-drop {
+  left: 72%;
+  top: 50%;
 }
 
 .bottom-ui {

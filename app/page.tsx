@@ -30,8 +30,9 @@ type Unit = {
   name: string
   role: string
   side: Side
-  lane: Lane
+  lane: Lane | null
   x: number
+  y: number
   hp: number
   maxHp: number
   damage: number
@@ -90,12 +91,12 @@ function clamp(value: number, min: number, max: number) {
 
 function makeTowers(): Tower[] {
   return [
-    { id: 'player-top', side: 'player', lane: 0, x: 16, hp: 420, maxHp: 420, damage: 22, range: 24, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
-    { id: 'player-bottom', side: 'player', lane: 1, x: 16, hp: 420, maxHp: 420, damage: 22, range: 24, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
-    { id: 'player-king', side: 'player', lane: null, x: 8, hp: 900, maxHp: 900, damage: 28, range: 25, cooldown: 1.25, attackTimer: 0, label: 'King Tower' },
-    { id: 'bot-top', side: 'bot', lane: 0, x: 84, hp: 420, maxHp: 420, damage: 22, range: 24, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
-    { id: 'bot-bottom', side: 'bot', lane: 1, x: 84, hp: 420, maxHp: 420, damage: 22, range: 24, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
-    { id: 'bot-king', side: 'bot', lane: null, x: 92, hp: 900, maxHp: 900, damage: 28, range: 25, cooldown: 1.25, attackTimer: 0, label: 'King Tower' },
+    { id: 'player-left', side: 'player', lane: 0, x: 28, hp: 420, maxHp: 420, damage: 22, range: 24, cooldown: 1.1, attackTimer: 0, label: 'Archer Tower' },
+    { id: 'player-right', side: 'player', lane: 1, x: 72, hp: 420, maxHp: 420, damage: 22, range: 24, cooldown: 1.1, attackTimer: 0, label: 'Archer Tower' },
+    { id: 'player-king', side: 'player', lane: null, x: 50, hp: 900, maxHp: 900, damage: 28, range: 25, cooldown: 1.25, attackTimer: 0, label: 'King Tower' },
+    { id: 'bot-left', side: 'bot', lane: 0, x: 28, hp: 420, maxHp: 420, damage: 22, range: 24, cooldown: 1.1, attackTimer: 0, label: 'Archer Tower' },
+    { id: 'bot-right', side: 'bot', lane: 1, x: 72, hp: 420, maxHp: 420, damage: 22, range: 24, cooldown: 1.1, attackTimer: 0, label: 'Archer Tower' },
+    { id: 'bot-king', side: 'bot', lane: null, x: 50, hp: 900, maxHp: 900, damage: 28, range: 25, cooldown: 1.25, attackTimer: 0, label: 'King Tower' },
   ]
 }
 
@@ -190,7 +191,8 @@ export default function HomePage() {
       setUnits((current) =>
         current
           .map((unit) => {
-            if (unit.side === side || unit.lane !== lane) return unit
+            if (unit.side === side) return unit
+            if (unit.lane !== lane && unit.lane !== null) return unit
             return { ...unit, hp: unit.hp - card.damage }
           })
           .filter((unit) => unit.hp > 0)
@@ -215,7 +217,8 @@ export default function HomePage() {
       role: card.role,
       side,
       lane,
-      x: side === 'player' ? 18 : 82,
+      x: lane === 0 ? 28 : 72,
+      y: side === 'player' ? 82 : 18,
       hp: card.hp ?? 100,
       maxHp: card.hp ?? 100,
       damage: card.damage,
@@ -291,17 +294,21 @@ export default function HomePage() {
 
         for (const unit of updated) {
           const enemies = updated
-            .filter((other) => other.side !== unit.side && other.lane === unit.lane)
-            .sort((a, b) => Math.abs(a.x - unit.x) - Math.abs(b.x - unit.x))
+            .filter((other) => other.side !== unit.side && (other.lane === unit.lane || other.lane === null))
+            .sort((a, b) => Math.abs(a.y - unit.y) - Math.abs(b.y - unit.y))
 
           const enemyTowers = towersRef.current
             .filter((tower) => tower.side !== unit.side && (tower.lane === unit.lane || tower.lane === null) && tower.hp > 0)
-            .sort((a, b) => Math.abs(a.x - unit.x) - Math.abs(b.x - unit.x))
+            .sort((a, b) => {
+              const ay = tower.side === 'player' ? 84 : 16
+              const by = b.side === 'player' ? 84 : 16
+              return Math.abs(ay - unit.y) - Math.abs(by - unit.y)
+            })
 
           const targetUnit = enemies[0]
           const targetTower = enemyTowers[0]
 
-          if (targetUnit && Math.abs(targetUnit.x - unit.x) <= unit.range) {
+          if (targetUnit && Math.abs(targetUnit.y - unit.y) <= unit.range) {
             if (unit.attackTimer <= 0) {
               unitDamage.set(targetUnit.id, (unitDamage.get(targetUnit.id) ?? 0) + unit.damage)
               unit.attackTimer = unit.cooldown
@@ -309,7 +316,8 @@ export default function HomePage() {
             continue
           }
 
-          if (targetTower && Math.abs(targetTower.x - unit.x) <= unit.range) {
+          const towerY = targetTower ? (targetTower.side === 'player' ? 84 : 16) : 0
+          if (targetTower && Math.abs(towerY - unit.y) <= unit.range) {
             if (unit.attackTimer <= 0) {
               towerDamage.set(targetTower.id, (towerDamage.get(targetTower.id) ?? 0) + unit.damage)
               unit.attackTimer = unit.cooldown
@@ -317,8 +325,8 @@ export default function HomePage() {
             continue
           }
 
-          const direction = unit.side === 'player' ? 1 : -1
-          unit.x = clamp(unit.x + unit.speed * delta * direction, 8, 92)
+          const direction = unit.side === 'player' ? -1 : 1
+          unit.y = clamp(unit.y + unit.speed * delta * direction, 10, 90)
         }
 
         if (towerDamage.size > 0) {
@@ -342,11 +350,12 @@ export default function HomePage() {
 
         for (const tower of updated) {
           if (tower.hp <= 0 || tower.attackTimer > 0) continue
+          const towerY = tower.side === 'player' ? 84 : 16
           const target = unitsRef.current
             .filter((unit) => unit.side !== tower.side && (tower.lane === null || unit.lane === tower.lane))
-            .sort((a, b) => Math.abs(a.x - tower.x) - Math.abs(b.x - tower.x))[0]
+            .sort((a, b) => Math.abs(a.y - towerY) - Math.abs(b.y - towerY))[0]
 
-          if (target && Math.abs(target.x - tower.x) <= tower.range) {
+          if (target && Math.abs(target.y - towerY) <= tower.range) {
             unitDamage.set(target.id, (unitDamage.get(target.id) ?? 0) + tower.damage)
             tower.attackTimer = tower.cooldown
           }
@@ -368,9 +377,9 @@ export default function HomePage() {
         botThinkRef.current = 0
         const playable = botDeck.map(getCard).filter((card) => card.cost <= botEnergyRef.current)
         if (playable.length > 0) {
-          const pressureTop = unitsRef.current.filter((unit) => unit.side === 'player' && unit.lane === 0).length
-          const pressureBottom = unitsRef.current.filter((unit) => unit.side === 'player' && unit.lane === 1).length
-          const lane: Lane = pressureTop > pressureBottom ? 0 : 1
+          const pressureLeft = unitsRef.current.filter((unit) => unit.side === 'player' && unit.lane === 0).length
+          const pressureRight = unitsRef.current.filter((unit) => unit.side === 'player' && unit.lane === 1).length
+          const lane: Lane = pressureLeft > pressureRight ? 0 : 1
           const chosen = playable[Math.floor(Math.random() * playable.length)]
           summonCard(chosen.id, 'bot', lane)
           setBotEnergy((current) => clamp(current - chosen.cost, 0, maxEnergy))
@@ -543,7 +552,7 @@ export default function HomePage() {
             {towers.map((tower) => {
               const isEnemy = tower.side === 'bot'
               const isKing = tower.lane === null
-              const topPosition = isKing ? (isEnemy ? 8 : 92) : tower.lane === 0 ? 27 : 73
+              const topPosition = isKing ? (isEnemy ? 10 : 90) : isEnemy ? 24 : 76
               return (
                 <div
                   className={`tower-node ${isEnemy ? 'enemy' : 'player'} ${isKing ? 'king-node' : ''}`}
@@ -563,7 +572,7 @@ export default function HomePage() {
               <div
                 className={`unit-node ${unit.side}`}
                 key={unit.id}
-                style={{ left: `${unit.x}%`, top: `${unit.lane === 0 ? (unit.side === 'player' ? 39 : 16) : unit.side === 'player' ? 84 : 61}%` }}
+                style={{ left: `${unit.x}%`, top: `${unit.y}%` }}
               >
                 <div className="unit-portrait" style={{ background: `linear-gradient(180deg, ${unit.color}, ${unit.accent})` }}>
                   <i />
@@ -574,8 +583,8 @@ export default function HomePage() {
               </div>
             ))}
 
-            <div className="drop-hint top">Suelta aquí</div>
-            <div className="drop-hint bottom">Suelta aquí</div>
+            <div className="drop-hint left-drop">Carril izquierdo</div>
+            <div className="drop-hint right-drop">Carril derecho</div>
           </div>
 
           <div className="king-health player">
