@@ -159,6 +159,10 @@ button { border: 0; color: inherit; }
   overflow: hidden;
   border-radius: 14px;
   background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(0,0,0,0.12));
+  --art-main: rgba(255,255,255,0.88);
+  --art-secondary: rgba(255,255,255,0.72);
+  --art-accent: rgba(255,255,255,0.48);
+  --art-effect-color: rgba(255,255,255,0.22);
 }
 .battle .card-portrait, .card-portrait.battle { height: 76px; }
 .mini-card-wrap .card-portrait { height: 56px; }
@@ -195,7 +199,7 @@ button { border: 0; color: inherit; }
   height: 30px;
   transform: translateX(-50%);
   border-radius: 14px 14px 10px 10px;
-  background: rgba(255,255,255,0.88);
+  background: var(--art-main);
 }
 .art-head {
   left: 50%;
@@ -204,7 +208,7 @@ button { border: 0; color: inherit; }
   height: 24px;
   transform: translateX(-50%);
   border-radius: 999px;
-  background: rgba(255,255,255,0.95);
+  background: var(--art-secondary);
 }
 .art-weapon {
   right: 8px;
@@ -212,7 +216,7 @@ button { border: 0; color: inherit; }
   width: 12px;
   height: 30px;
   border-radius: 999px 999px 6px 6px;
-  background: rgba(255,255,255,0.7);
+  background: var(--art-accent);
   transform: rotate(16deg);
 }
 .art-trim {
@@ -221,53 +225,110 @@ button { border: 0; color: inherit; }
   width: 18px;
   height: 18px;
   border-radius: 8px;
-  background: rgba(255,255,255,0.35);
+  background: color-mix(in srgb, var(--art-main) 50%, transparent);
 }
 .art-effect {
   inset: auto auto 10px 8px;
   width: 20px;
   height: 20px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.22);
+  background: var(--art-effect-color);
 }
 
-.art-runner { background: linear-gradient(180deg, #ffcd72, #ce6d19); }
-.art-runner .art-weapon { width: 16px; height: 38px; right: 4px; top: 8px; background: #fff7d8; }
-.art-runner .art-trim { width: 24px; border-radius: 14px 2px 10px 10px; background: #7a3320; }
+.art-runner {
+  background: linear-gradient(180deg, #ffd471, #c66519);
+  --art-main: #f2c04c;
+  --art-secondary: #fff0ca;
+  --art-accent: #f8fbff;
+  --art-effect-color: rgba(255, 244, 198, 0.4);
+}
+.art-runner .art-body { width: 28px; height: 32px; bottom: 14px; transform: translateX(-50%) skewX(-8deg); }
+.art-runner .art-head { top: 12px; left: 44%; }
+.art-runner .art-weapon { width: 18px; height: 40px; right: 2px; top: 6px; border-radius: 4px 16px 16px 4px; background: #fff6df; }
+.art-runner .art-trim { width: 24px; height: 12px; border-radius: 14px 2px 10px 10px; background: #7a3320; }
+.art-runner .art-effect { width: 26px; height: 8px; bottom: 20px; left: 4px; transform: rotate(-18deg); }
 
-.art-gunner { background: linear-gradient(180deg, #a9f0ff, #2f7ec0); }
-.art-gunner .art-weapon { width: 28px; height: 10px; right: 2px; top: 28px; border-radius: 999px; transform: rotate(-8deg); background: #ebffff; }
-.art-gunner .art-body { width: 28px; height: 34px; }
+.art-gunner {
+  background: linear-gradient(180deg, #b3f4ff, #2f74b8);
+  --art-main: #4ed1f5;
+  --art-secondary: #e9fbff;
+  --art-accent: #f9ffff;
+  --art-effect-color: rgba(138, 244, 255, 0.38);
+}
+.art-gunner .art-body { width: 28px; height: 34px; border-radius: 12px; }
+.art-gunner .art-head { top: 10px; width: 22px; height: 22px; }
+.art-gunner .art-weapon { width: 32px; height: 10px; right: 0; top: 29px; border-radius: 999px; transform: rotate(-6deg); background: #f3ffff; }
+.art-gunner .art-trim { width: 16px; height: 22px; left: 8px; top: 22px; border-radius: 8px; background: #2b5d8f; }
+.art-gunner .art-effect { width: 12px; height: 12px; left: auto; right: 2px; bottom: 30px; }
 
-.art-bulwark { background: linear-gradient(180deg, #c48961, #532f27); }
-.art-bulwark .art-body { width: 40px; height: 34px; border-radius: 16px; }
-.art-bulwark .art-weapon { width: 22px; height: 28px; right: 2px; top: 20px; border-radius: 8px; transform: rotate(0deg); background: #ffba8f; }
-.art-bulwark .art-trim { width: 26px; height: 24px; left: 4px; top: 20px; border-radius: 10px; background: rgba(255,255,255,0.52); }
+.art-bulwark {
+  background: linear-gradient(180deg, #c58f65, #4f2e28);
+  --art-main: #855342;
+  --art-secondary: #ffd7c0;
+  --art-accent: #ffaf80;
+  --art-effect-color: rgba(255, 182, 138, 0.3);
+}
+.art-bulwark .art-body { width: 42px; height: 34px; border-radius: 16px; }
+.art-bulwark .art-head { left: 56%; top: 12px; }
+.art-bulwark .art-weapon { width: 24px; height: 28px; right: 0; top: 20px; border-radius: 8px; transform: rotate(0deg); background: #ffb287; }
+.art-bulwark .art-trim { width: 28px; height: 26px; left: 2px; top: 18px; border-radius: 12px; background: #d9d7d4; }
 
-.art-parrot { background: linear-gradient(180deg, #ff9d67, #932a3a); }
-.art-parrot .art-body { width: 30px; height: 24px; bottom: 20px; border-radius: 50% 50% 45% 45%; }
-.art-parrot .art-head { top: 18px; left: 42%; }
-.art-parrot .art-weapon { width: 18px; height: 18px; right: 10px; top: 34px; border-radius: 999px; background: #ffe1a0; }
-.art-parrot .art-effect { width: 28px; height: 10px; left: 6px; bottom: 30px; background: rgba(255,255,255,0.5); }
+.art-parrot {
+  background: linear-gradient(180deg, #ff9e68, #8c2639);
+  --art-main: #d74f52;
+  --art-secondary: #fff3b6;
+  --art-accent: #ffd875;
+  --art-effect-color: rgba(255, 235, 173, 0.42);
+}
+.art-parrot .art-body { width: 30px; height: 24px; bottom: 22px; border-radius: 48% 52% 44% 44%; }
+.art-parrot .art-head { top: 18px; left: 42%; width: 20px; height: 20px; }
+.art-parrot .art-weapon { width: 18px; height: 18px; right: 8px; top: 34px; border-radius: 999px; background: #ffdb87; }
+.art-parrot .art-trim { width: 26px; height: 10px; left: 4px; top: 26px; border-radius: 999px; transform: rotate(-18deg); background: #fff4cf; }
+.art-parrot .art-effect { width: 30px; height: 10px; left: 4px; bottom: 30px; background: rgba(255,255,255,0.56); }
 
-.art-cannon { background: linear-gradient(180deg, #bddcff, #314d66); }
-.art-cannon .art-body { width: 42px; height: 22px; bottom: 20px; border-radius: 12px; background: #d8f2ff; }
-.art-cannon .art-head { width: 14px; height: 14px; top: 34px; left: 28%; }
-.art-cannon .art-weapon { width: 34px; height: 14px; right: 2px; top: 26px; border-radius: 999px; transform: rotate(4deg); background: #eef9ff; }
-.art-cannon .art-trim { width: 14px; height: 14px; left: 8px; top: 38px; border-radius: 999px; }
+.art-cannon {
+  background: linear-gradient(180deg, #c9e4ff, #314f67);
+  --art-main: #65513d;
+  --art-secondary: #dff4ff;
+  --art-accent: #f3fbff;
+  --art-effect-color: rgba(177, 237, 255, 0.32);
+}
+.art-cannon .art-body { width: 42px; height: 22px; bottom: 18px; border-radius: 12px; background: #6d553f; }
+.art-cannon .art-head { width: 16px; height: 16px; top: 34px; left: 28%; background: #89a8bf; }
+.art-cannon .art-weapon { width: 36px; height: 14px; right: 0; top: 24px; border-radius: 999px; transform: rotate(4deg); background: #ddecf5; }
+.art-cannon .art-trim { width: 14px; height: 14px; left: 8px; top: 38px; border-radius: 999px; background: #c5e9ff; }
 
-.art-brute { background: linear-gradient(180deg, #ffbc8f, #884132); }
-.art-brute .art-body { width: 42px; height: 34px; }
-.art-brute .art-weapon { width: 18px; height: 44px; right: 4px; top: 2px; transform: rotate(32deg); background: #fff2e3; }
-.art-brute .art-effect { width: 26px; height: 26px; left: 4px; bottom: 8px; background: rgba(255,214,167,0.35); }
+.art-brute {
+  background: linear-gradient(180deg, #ffc093, #8a4032);
+  --art-main: #d77249;
+  --art-secondary: #ffe4cf;
+  --art-accent: #fff4e8;
+  --art-effect-color: rgba(255, 207, 144, 0.34);
+}
+.art-brute .art-body { width: 44px; height: 36px; border-radius: 18px; }
+.art-brute .art-head { width: 22px; height: 22px; top: 10px; }
+.art-brute .art-weapon { width: 20px; height: 46px; right: 3px; top: 0; transform: rotate(32deg); background: #fff2e4; }
+.art-brute .art-trim { width: 12px; height: 24px; left: 6px; top: 22px; background: #6f3029; }
+.art-brute .art-effect { width: 28px; height: 28px; left: 4px; bottom: 8px; }
 
-.art-siren { background: linear-gradient(180deg, #d6d0ff, #6468d7); }
+.art-siren {
+  background: linear-gradient(180deg, #d8d2ff, #6267d9);
+  --art-main: #8b7df2;
+  --art-secondary: #f7f7ff;
+  --art-accent: #fefefe;
+  --art-effect-color: rgba(214, 230, 255, 0.36);
+}
 .art-siren .art-body { width: 30px; height: 36px; border-radius: 18px 18px 12px 12px; }
-.art-siren .art-head { width: 22px; height: 22px; top: 12px; }
-.art-siren .art-weapon { width: 10px; height: 38px; right: 10px; top: 10px; background: #fbffff; }
-.art-siren .art-effect { width: 34px; height: 34px; left: 2px; bottom: 12px; background: rgba(255,255,255,0.26); }
+.art-siren .art-head { width: 22px; height: 22px; top: 10px; }
+.art-siren .art-weapon { width: 10px; height: 40px; right: 8px; top: 8px; background: #fbffff; }
+.art-siren .art-trim { width: 22px; height: 18px; left: 6px; top: 10px; border-radius: 999px 999px 8px 8px; background: #5b52b8; }
+.art-siren .art-effect { width: 36px; height: 36px; left: 0; bottom: 12px; }
 
-.art-powder { background: linear-gradient(180deg, #ffc3d4, #cf3d67); }
+.art-powder {
+  background: linear-gradient(180deg, #ffc3d4, #cf3d67);
+  --art-accent: #fff7d7;
+  --art-effect-color: rgba(255, 192, 224, 0.36);
+}
 .art-powder .art-body, .art-powder .art-head { display: none; }
 .art-powder .art-weapon {
   left: 50%;
@@ -294,6 +355,82 @@ button { border: 0; color: inherit; }
   transform: translateX(-50%);
   border-radius: 999px;
   background: rgba(0,0,0,0.2);
+}
+
+.battle-tower .tower-node,
+.unit-node .card-portrait { will-change: transform; }
+
+.battle-tower .tower-node.archer { animation: towerArcherIdle 1.9s ease-in-out infinite; }
+.battle-tower .tower-node.king { animation: towerKingIdle 2.6s ease-in-out infinite; }
+.unit-node.move-ground .card-portrait { animation: troopBob 1.8s ease-in-out infinite; }
+.unit-node.move-static .card-portrait { animation: towerHum 2.1s ease-in-out infinite; }
+.unit-node.move-air .card-portrait { animation: airFloat 1.2s ease-in-out infinite; }
+.unit-node .art-runner { animation: runnerLean 0.8s ease-in-out infinite; }
+.unit-node .art-gunner { animation: gunnerAim 1.3s ease-in-out infinite; }
+.unit-node .art-bulwark { animation: bulwarkSway 1.6s ease-in-out infinite; }
+.unit-node .art-parrot { animation: parrotFlap 0.75s ease-in-out infinite; }
+.unit-node .art-cannon { animation: cannonPulse 1.4s ease-in-out infinite; }
+.unit-node .art-brute { animation: bruteStomp 1.5s ease-in-out infinite; }
+.unit-node .art-siren { animation: sirenFlow 1.5s ease-in-out infinite; }
+
+@keyframes troopBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes towerArcherIdle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes towerKingIdle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1px) scale(1.01); }
+}
+
+@keyframes towerHum {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1px); }
+}
+
+@keyframes airFloat {
+  0%, 100% { transform: translateY(-6px); }
+  50% { transform: translateY(-11px); }
+}
+
+@keyframes runnerLean {
+  0%, 100% { transform: skewX(-4deg) translateX(0); }
+  50% { transform: skewX(-8deg) translateX(2px); }
+}
+
+@keyframes gunnerAim {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateX(1px); }
+}
+
+@keyframes bulwarkSway {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(1px) scale(1.01); }
+}
+
+@keyframes parrotFlap {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(-2deg); }
+}
+
+@keyframes cannonPulse {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-1px); }
+}
+
+@keyframes bruteStomp {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px) scale(1.02); }
+}
+
+@keyframes sirenFlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
 }
 
 .tone-tank { box-shadow: inset 0 0 0 1px rgba(255, 143, 98, 0.42); }
