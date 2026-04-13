@@ -534,8 +534,19 @@ function CharacterVisual({ unit }: { unit: Unit }) {
   return (
     <div className={`battle-character char-${unit.cardId} side-${unit.side}`}>
       <div className="character-shadow" />
+      <div className="character-aura" />
+      <div className="character-legs-main" />
       <div className="character-body-main" />
+      <div className="character-belt-main" />
+      <div className="character-arm-main arm-back" />
       <div className="character-head-main" />
+      <div className="character-face-main">
+        <i className="eye eye-left" />
+        <i className="eye eye-right" />
+        <i className="mouth" />
+      </div>
+      <div className="character-hat-main" />
+      <div className="character-arm-main arm-front" />
       <div className="character-weapon-main" />
       <div className="character-detail-main" />
       <div className="character-effect-main" />
@@ -551,10 +562,16 @@ function TowerVisual({ tower, preview = false }: { tower: Tower | TowerBlueprint
     <div className={`tower-node ${kind} ${sideClass} ${preview ? 'tower-preview' : ''}`}>
       <div className="tower-shadow" />
       <div className="tower-base" />
+      <div className="tower-platform" />
       <div className="tower-body">
+        <div className="tower-side tower-side-left" />
+        <div className="tower-side tower-side-right" />
+        <div className="tower-battlements" />
         <div className="tower-roof" />
         <div className="tower-window" />
+        <div className="tower-door" />
         <div className="tower-banner" />
+        <div className="tower-flag" />
         {kind === 'archer' ? <div className="tower-archer" /> : <div className="tower-crown" />}
       </div>
     </div>
@@ -1011,8 +1028,12 @@ export default function HomePage() {
           </div>
 
           <div className="arena-board" ref={arenaRef}>
+            <div className="arena-sky-haze" />
             <div className="arena-sun" />
+            <div className="arena-cliff top" />
+            <div className="arena-cliff bottom" />
             <div className="arena-river" />
+            <div className="arena-river-foam" />
             <div className="arena-deckline top" />
             <div className="arena-deckline bottom" />
             <div className="bridge left-bridge" />
