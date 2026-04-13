@@ -357,6 +357,228 @@ button { border: 0; color: inherit; }
   background: rgba(0,0,0,0.2);
 }
 
+.art-knight {
+  background: linear-gradient(180deg, #cddcff, #5577b6);
+  --art-main: #7f9dd6;
+  --art-secondary: #f2f6ff;
+  --art-accent: #e8edf6;
+  --art-effect-color: rgba(201, 225, 255, 0.3);
+}
+.art-knight .art-weapon { width: 10px; height: 38px; right: 8px; top: 10px; background: #fffaf0; }
+.art-knight .art-trim { width: 20px; height: 14px; top: 12px; background: #5e79ad; }
+
+.art-giant {
+  background: linear-gradient(180deg, #f2c188, #9a5b34);
+  --art-main: #cb8c54;
+  --art-secondary: #ffe9d2;
+  --art-accent: #7a4026;
+  --art-effect-color: rgba(255, 207, 149, 0.34);
+}
+.art-giant .art-body { width: 42px; height: 36px; }
+.art-giant .art-weapon { width: 12px; height: 20px; top: 28px; right: 4px; border-radius: 999px; }
+
+.art-minipekka {
+  background: linear-gradient(180deg, #cfc8ff, #6458dd);
+  --art-main: #8273ff;
+  --art-secondary: #f6f3ff;
+  --art-accent: #fbfeff;
+  --art-effect-color: rgba(196, 186, 255, 0.3);
+}
+.art-minipekka .art-weapon { width: 18px; height: 42px; right: 2px; top: 4px; background: #faf8ff; }
+.art-minipekka .art-trim { width: 18px; height: 10px; border-radius: 999px; background: #4b43b1; }
+
+.art-archers {
+  background: linear-gradient(180deg, #ffc2d4, #d36f98);
+  --art-main: #f59fbc;
+  --art-secondary: #fff3f7;
+  --art-accent: #fff5df;
+  --art-effect-color: rgba(255, 214, 235, 0.36);
+}
+.art-archers .art-body { width: 26px; height: 30px; left: 38%; }
+.art-archers .art-head { left: 36%; }
+.art-archers .art-weapon { width: 12px; height: 34px; right: 6px; top: 10px; border-radius: 12px; background: #fff2d9; transform: rotate(8deg); }
+.art-archers .art-trim { width: 16px; height: 24px; left: 52%; top: 18px; background: rgba(255,255,255,0.68); }
+
+.art-minions {
+  background: linear-gradient(180deg, #cfd5ff, #4952b7);
+  --art-main: #6f78de;
+  --art-secondary: #eff2ff;
+  --art-accent: #d2dbff;
+  --art-effect-color: rgba(185, 197, 255, 0.34);
+}
+.art-minions .art-body { width: 26px; height: 20px; bottom: 24px; border-radius: 50%; }
+.art-minions .art-head { width: 18px; height: 18px; top: 18px; }
+.art-minions .art-weapon { width: 14px; height: 12px; right: 8px; top: 34px; border-radius: 999px; }
+.art-minions .art-trim { width: 28px; height: 10px; left: 4px; top: 24px; transform: rotate(-16deg); }
+
+.art-arrows {
+  background: linear-gradient(180deg, #ffe8b9, #c08a37);
+  --art-accent: #fff7dd;
+}
+.art-arrows .art-body, .art-arrows .art-head { display: none; }
+.art-arrows .art-weapon { width: 8px; height: 34px; right: 28px; top: 10px; background: #fff7e5; }
+.art-arrows .art-trim { width: 8px; height: 34px; left: 18px; top: 18px; background: #fff2d6; transform: rotate(12deg); }
+.art-arrows .art-effect { width: 10px; height: 36px; left: 34px; bottom: 10px; }
+
+.art-fireball {
+  background: linear-gradient(180deg, #ffd18e, #d65728);
+  --art-accent: #fff8da;
+  --art-effect-color: rgba(255, 200, 129, 0.4);
+}
+.art-fireball .art-body, .art-fireball .art-head { display: none; }
+.art-fireball .art-weapon { width: 30px; height: 30px; right: 10px; top: 18px; border-radius: 999px; background: #fff0bf; }
+.art-fireball .art-trim { width: 18px; height: 12px; left: 10px; top: 26px; border-radius: 999px; background: rgba(255,255,255,0.46); }
+.art-fireball .art-effect { width: 34px; height: 12px; left: 6px; bottom: 18px; transform: rotate(-18deg); }
+
+.battle-character {
+  position: relative;
+  width: 58px;
+  height: 64px;
+  margin: 0 auto;
+}
+.size-2-2 .battle-character { width: 72px; height: 78px; }
+.size-1-1 .battle-character { width: 46px; height: 50px; }
+.character-shadow,
+.character-body-main,
+.character-head-main,
+.character-weapon-main,
+.character-detail-main,
+.character-effect-main { position: absolute; }
+.character-shadow {
+  left: 50%;
+  bottom: 4px;
+  width: 42px;
+  height: 10px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(0,0,0,0.22);
+}
+.character-body-main {
+  left: 50%;
+  bottom: 12px;
+  width: 28px;
+  height: 26px;
+  transform: translateX(-50%);
+  border-radius: 14px;
+  background: #d5ddef;
+}
+.character-head-main {
+  left: 50%;
+  top: 10px;
+  width: 20px;
+  height: 20px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: #fff3e7;
+}
+.character-weapon-main {
+  right: 8px;
+  top: 12px;
+  width: 10px;
+  height: 28px;
+  border-radius: 10px;
+  background: #f3f7ff;
+}
+.character-detail-main {
+  left: 8px;
+  top: 16px;
+  width: 14px;
+  height: 14px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.4);
+}
+.character-effect-main {
+  left: 6px;
+  bottom: 16px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.2);
+}
+
+.move-ground .battle-character { animation: troopBob 1.1s ease-in-out infinite; }
+.move-air .battle-character { animation: airFloat 0.9s ease-in-out infinite; }
+.move-static .battle-character { animation: towerHum 1.8s ease-in-out infinite; }
+.char-knight { animation: knightSwing 1.2s ease-in-out infinite; }
+.char-giant { animation: giantStomp 1.6s ease-in-out infinite; }
+.char-minipekka { animation: pekkaChop 1s ease-in-out infinite; }
+.char-archers { animation: archerDraw 1.2s ease-in-out infinite; }
+.char-cannon { animation: cannonKick 1.4s ease-in-out infinite; }
+.char-minions { animation: minionScratch 0.7s ease-in-out infinite; }
+
+.char-knight .character-body-main { background: #7694cf; }
+.char-knight .character-head-main { background: #eef4ff; }
+.char-knight .character-weapon-main { background: #fff8ec; }
+.char-knight .character-detail-main { background: #5571aa; }
+
+.char-giant .character-body-main { width: 40px; height: 34px; background: #c58a51; }
+.char-giant .character-head-main { width: 18px; height: 18px; background: #ffe8d2; }
+.char-giant .character-weapon-main { width: 14px; height: 16px; top: 30px; background: #7d4428; }
+.char-giant .character-detail-main { width: 20px; height: 10px; top: 30px; border-radius: 999px; background: #8a512d; }
+
+.char-minipekka .character-body-main { background: #7a6cff; }
+.char-minipekka .character-head-main { background: #f1eeff; }
+.char-minipekka .character-weapon-main { width: 14px; height: 36px; background: #fbfaff; }
+.char-minipekka .character-detail-main { background: #5048b8; }
+
+.char-archers .character-body-main { width: 14px; left: 38%; background: #ef9ab8; }
+.char-archers .character-head-main { left: 36%; background: #fff2f4; }
+.char-archers .character-weapon-main { width: 12px; height: 30px; right: 8px; background: #fff0dc; }
+.char-archers .character-detail-main { width: 14px; height: 26px; left: 30px; top: 18px; background: rgba(255,255,255,0.62); }
+
+.char-cannon .character-body-main { width: 40px; height: 18px; bottom: 18px; background: #6f5641; }
+.char-cannon .character-head-main { width: 12px; height: 12px; top: 30px; left: 26%; background: #8ea8bf; }
+.char-cannon .character-weapon-main { width: 32px; height: 14px; top: 24px; right: 2px; border-radius: 999px; background: #d9e8f0; }
+.char-cannon .character-detail-main { width: 14px; height: 14px; top: 34px; background: #d2e6ff; border-radius: 999px; }
+
+.char-minions .character-body-main { width: 20px; height: 18px; bottom: 24px; background: #6977dd; border-radius: 50%; }
+.char-minions .character-head-main { width: 16px; height: 16px; top: 18px; background: #e9eeff; }
+.char-minions .character-weapon-main { width: 12px; height: 12px; top: 34px; background: #d5ddff; border-radius: 999px; }
+.char-minions .character-detail-main { width: 28px; height: 10px; top: 24px; left: 4px; transform: rotate(-18deg); background: rgba(214,221,255,0.85); }
+
+.tower-hp-number,
+.unit-hp-number {
+  font-size: 0.62rem;
+  text-align: center;
+  font-weight: 800;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+}
+.tower-hp-number { margin-top: 4px; }
+
+.projectile {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 4;
+}
+.projectile-arrow {
+  width: 16px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #fff7dc, #d79b33);
+}
+.projectile-cannonball {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #d7ebff, #586b7c);
+}
+.projectile-fireball {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #fff0b8, #ff7a2f);
+  box-shadow: 0 0 12px rgba(255, 156, 72, 0.6);
+}
+.projectile-slash,
+.projectile-claw {
+  width: 20px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.1), #fff4d8, rgba(255,255,255,0.1));
+}
+.projectile-claw { background: linear-gradient(90deg, rgba(255,255,255,0.05), #dbe2ff, rgba(255,255,255,0.05)); }
+
 .battle-tower .tower-node,
 .unit-node .card-portrait { will-change: transform; }
 
@@ -386,6 +608,36 @@ button { border: 0; color: inherit; }
 @keyframes towerKingIdle {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-1px) scale(1.01); }
+}
+
+@keyframes knightSwing {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-3deg); }
+}
+
+@keyframes giantStomp {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px) scale(1.02); }
+}
+
+@keyframes pekkaChop {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes archerDraw {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateX(1px); }
+}
+
+@keyframes cannonKick {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-2px); }
+}
+
+@keyframes minionScratch {
+  0%, 100% { transform: translateY(-5px); }
+  50% { transform: translateY(-8px) rotate(-3deg); }
 }
 
 @keyframes towerHum {

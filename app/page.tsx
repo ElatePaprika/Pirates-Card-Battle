@@ -11,6 +11,7 @@ type AttackTarget = 'ground' | 'air-ground' | 'buildings'
 type AttackPattern = 'single' | 'splash'
 type RoleTone = 'tank' | 'damage' | 'support' | 'spell'
 type UnitClass = 'troop' | 'building'
+type ProjectileKind = 'arrow' | 'cannonball' | 'fireball' | 'slash' | 'claw'
 
 type Account = {
   name: string
@@ -82,6 +83,7 @@ type Unit = {
   role: string
   tone: RoleTone
   size: ArtDirection['size']
+  attackFx: ProjectileKind
 }
 
 type Tower = {
@@ -102,6 +104,17 @@ type DragState = {
   cardIndex: number
   x: number
   y: number
+}
+
+type Projectile = {
+  id: number
+  kind: ProjectileKind
+  side: Side
+  x: number
+  y: number
+  vx: number
+  vy: number
+  ttl: number
 }
 
 type TargetRef =
@@ -129,145 +142,144 @@ const battleDuration = 120
 
 const cards: Card[] = [
   {
-    id: 'runner',
-    name: 'Cutlass Runner',
-    role: 'Melee',
-    battleRole: 'Duelista veloz',
+    id: 'knight',
+    name: 'Caballero',
+    role: 'Mini tanque',
+    battleRole: 'Melee',
     type: 'unit',
     rarity: 'Common',
     cost: 2,
     level: 1,
     progress: 0,
     progressMax: 2,
-    hp: 128,
-    damage: 24,
-    speed: 15,
+    hp: 180,
+    damage: 22,
+    speed: 11,
     range: 5,
-    cooldown: 0.72,
+    cooldown: 0.9,
     movement: 'ground',
     attackTarget: 'ground',
     attackPattern: 'single',
     unitClass: 'troop',
-    color: '#f7af45',
-    accent: '#fff1bd',
-    summary: 'Presion barata de cuerpo a cuerpo para forzar respuestas rapidas.',
+    color: '#7ea0d7',
+    accent: '#ecf3ff',
+    summary: 'Mini tanque barato para defender y acompañar pushes.',
     art: {
-      silhouette: 'Small triangular pirate with oversized cutlass and forward-leaning sprint pose.',
-      shape: 'Angular body, tiny waist, high visual momentum and clear 1x1 footprint.',
-      palette: 'Warm saffron, cream cloth and toasted leather for instant damage-role recognition.',
-      iconic: 'Big cutlass, striped scarf and hat spike that reads even at tiny scale.',
-      animation: 'Idle bounce, fast lunge attack and quick recover to keep the unit feeling snappy.',
-      feedback: 'White slash streak, bright hit flash and tiny spark burst on contact.',
+      silhouette: 'Casco redondo, espada corta y hombros anchos.',
+      shape: 'Volumen compacto y frontal.',
+      palette: 'Azul acero, plata y crema.',
+      iconic: 'Espada, casco y hombreras.',
+      animation: 'Paso firme y tajo corto.',
+      feedback: 'Golpe limpio con trazo de espada.',
       size: '1x1',
-      tone: 'damage',
+      tone: 'tank',
     },
   },
   {
-    id: 'gunner',
-    name: 'Coral Gunner',
-    role: 'Rango',
-    battleRole: 'Control a distancia',
+    id: 'giant',
+    name: 'Gigante',
+    role: 'Tanque de asedio',
+    battleRole: 'Solo torres',
     type: 'unit',
-    rarity: 'Common',
-    cost: 3,
+    rarity: 'Rare',
+    cost: 5,
     level: 1,
     progress: 0,
     progressMax: 2,
-    hp: 142,
-    damage: 29,
-    speed: 10,
-    range: 15,
-    cooldown: 1,
+    hp: 360,
+    damage: 44,
+    speed: 7,
+    range: 5,
+    cooldown: 1.2,
     movement: 'ground',
-    attackTarget: 'air-ground',
+    attackTarget: 'buildings',
     attackPattern: 'single',
     unitClass: 'troop',
-    color: '#68d9ff',
-    accent: '#eefcff',
-    summary: 'Tirador de largo alcance que cubre aire y tierra.',
+    color: '#cc8e59',
+    accent: '#ffe2c5',
+    summary: 'Tanque grande que ignora tropas y se dirige a las torres.',
     art: {
-      silhouette: 'Narrow body dominated by a long coral rifle and rounded sea-helmet.',
-      shape: 'Tall vertical read with the weapon doing most of the recognition work.',
-      palette: 'Cyan, sea blue and pearl white to code support fire and precision.',
-      iconic: 'Rifle barrel, shoulder stock and coral sights.',
-      animation: 'Light breathing in idle and a big recoil kick on each shot.',
-      feedback: 'Cold muzzle flash, clear tracer line and crisp impact spark.',
-      size: '1x2',
-      tone: 'support',
+      silhouette: 'Cuerpo enorme con puños gigantes y cabeza pequeña.',
+      shape: 'Masa redonda y pesada.',
+      palette: 'Marron, cuero y piel clara.',
+      iconic: 'Puños, cinturon y botas grandes.',
+      animation: 'Pisadas pesadas y puñetazo descendente.',
+      feedback: 'Impacto fuerte con sacudida.',
+      size: '2x2',
+      tone: 'tank',
     },
   },
   {
-    id: 'bulwark',
-    name: 'Ironhook Bulwark',
-    role: 'Tanque melee',
-    battleRole: 'Muro frontal',
+    id: 'minipekka',
+    name: 'Mini Peka',
+    role: 'Asesino',
+    battleRole: 'Mucho daño',
     type: 'unit',
     rarity: 'Rare',
     cost: 4,
     level: 1,
     progress: 0,
     progressMax: 2,
-    hp: 290,
-    damage: 28,
-    speed: 8,
+    hp: 170,
+    damage: 56,
+    speed: 10,
     range: 5,
-    cooldown: 1.05,
+    cooldown: 1.1,
     movement: 'ground',
     attackTarget: 'ground',
     attackPattern: 'single',
     unitClass: 'troop',
-    color: '#8e5b45',
-    accent: '#ffd9c2',
-    summary: 'Tanque cuerpo a cuerpo que aguanta dano y frena pushes.',
+    color: '#7969f3',
+    accent: '#f1eeff',
+    summary: 'Unidad de mucho daño por golpe para eliminar tanques y apoyos.',
     art: {
-      silhouette: 'Broad shield mass, huge hook arm and very low center of gravity.',
-      shape: 'Round volume with massive shoulders and grounded stance.',
-      palette: 'Deep rust, steel gray and ember orange to scream tank instantly.',
-      iconic: 'Hook shield, armor plates and bright chest buckle.',
-      animation: 'Weighty idle sway, shoulder slam attack and slow but satisfying recoil.',
-      feedback: 'Dust burst, hot hit flash and deep red damage blink when focused.',
-      size: '2x2',
-      tone: 'tank',
+      silhouette: 'Cabeza triangular con espada ancha y ojos brillantes.',
+      shape: 'Compacto, anguloso y agresivo.',
+      palette: 'Violeta metalico y blanco.',
+      iconic: 'Espada pesada y visor brillante.',
+      animation: 'Avance corto y espadazo potente.',
+      feedback: 'Corte brillante y golpe seco.',
+      size: '1x1',
+      tone: 'damage',
     },
   },
   {
-    id: 'parrot',
-    name: 'Bomb Parrot',
-    role: 'Aereo en area',
-    battleRole: 'Bombardero aereo',
+    id: 'archers',
+    name: 'Arqueras',
+    role: 'Duo a distancia',
+    battleRole: 'Rango dual',
     type: 'unit',
     rarity: 'Rare',
     cost: 3,
     level: 1,
     progress: 0,
     progressMax: 2,
-    hp: 118,
-    damage: 34,
-    speed: 13,
+    hp: 154,
+    damage: 18,
+    speed: 10,
     range: 12,
-    cooldown: 1.2,
-    splashRadius: 10,
-    movement: 'air',
-    attackTarget: 'ground',
-    attackPattern: 'splash',
+    cooldown: 0.82,
+    movement: 'ground',
+    attackTarget: 'air-ground',
+    attackPattern: 'single',
     unitClass: 'troop',
-    color: '#ff7070',
-    accent: '#ffe2a3',
-    summary: 'Unidad aerea con dano de area que castiga grupos.',
+    color: '#ff8cad',
+    accent: '#ffe6f0',
+    summary: 'Dos arqueras en una sola carta para presion y defensa a distancia.',
     art: {
-      silhouette: 'Wing spread, round bomb belly and beak profile visible in one glance.',
-      shape: 'Diamond-like airborne mass with strong top-heavy read.',
-      palette: 'Crimson feathers, gold bomb glow and dark navy shadows.',
-      iconic: 'Bomb satchel, giant beak and wingtip ribbons.',
-      animation: 'Wing flap idle, bomb release dip and fast climb after each drop.',
-      feedback: 'Falling ember, compact blast ring and smoke puff on splash impact.',
+      silhouette: 'Dos siluetas delgadas con arcos altos.',
+      shape: 'Doble lectura vertical y ligera.',
+      palette: 'Rosa, beige y madera clara.',
+      iconic: 'Dos arcos y coletas gemelas.',
+      animation: 'Tension de arco y disparo alternado.',
+      feedback: 'Flecha clara y destello fino.',
       size: '1x2',
-      tone: 'damage',
+      tone: 'support',
     },
   },
   {
     id: 'cannon',
-    name: 'Deck Cannon',
+    name: 'Cañon',
     role: 'Estructura',
     battleRole: 'Defensa estatica',
     type: 'unit',
@@ -285,8 +297,8 @@ const cards: Card[] = [
     attackTarget: 'ground',
     attackPattern: 'single',
     unitClass: 'building',
-    color: '#506477',
-    accent: '#b4ddff',
+    color: '#56687b',
+    accent: '#d3e8ff',
     summary: 'Estructura defensiva estatica para controlar lineas terrestres.',
     art: {
       silhouette: 'Low wood platform, big cannon mouth and side wheels cropped into a chunky block.',
@@ -300,98 +312,91 @@ const cards: Card[] = [
     },
   },
   {
-    id: 'brute',
-    name: 'Anchor Brute',
-    role: 'Tanque de asedio',
-    battleRole: 'Cazatorres',
+    id: 'minions',
+    name: 'Esbirros',
+    role: 'Aereo melee',
+    battleRole: 'Aire rapido',
     type: 'unit',
-    rarity: 'Epic',
-    cost: 5,
-    level: 1,
-    progress: 0,
-    progressMax: 2,
-    hp: 336,
-    damage: 48,
-    speed: 8,
-    range: 5,
-    cooldown: 1.15,
-    movement: 'ground',
-    attackTarget: 'buildings',
-    attackPattern: 'single',
-    unitClass: 'troop',
-    color: '#ff8d60',
-    accent: '#ffe2d1',
-    summary: 'Condicion de victoria que ignora tropas y va a por estructuras.',
-    art: {
-      silhouette: 'Massive body with a giant anchor raised behind the back.',
-      shape: 'Rounded tank core with a huge diagonal weapon shape cutting across it.',
-      palette: 'Burnt orange, dark iron and rope tan for maximum siege readability.',
-      iconic: 'Oversized anchor, iron bands and sailor straps.',
-      animation: 'Heavy stomp loop and long overhead smash when in range.',
-      feedback: 'Ground shake feel, dust ring and bright orange impact flash.',
-      size: '2x2',
-      tone: 'tank',
-    },
-  },
-  {
-    id: 'siren',
-    name: 'Tide Siren',
-    role: 'Rango en area',
-    battleRole: 'Control en area',
-    type: 'unit',
-    rarity: 'Legendary',
-    cost: 4,
-    level: 1,
-    progress: 0,
-    progressMax: 2,
-    hp: 156,
-    damage: 26,
-    speed: 10,
-    range: 14,
-    cooldown: 0.9,
-    splashRadius: 9,
-    movement: 'ground',
-    attackTarget: 'air-ground',
-    attackPattern: 'splash',
-    unitClass: 'troop',
-    color: '#a599ff',
-    accent: '#f2f4ff',
-    summary: 'Maga de rango con splash para limpiar pushes cargados.',
-    art: {
-      silhouette: 'Floating hair mass, shell staff and long wave-shaped cape.',
-      shape: 'Elegant S-curve with a tall magical read.',
-      palette: 'Periwinkle, violet glow and pearl highlights.',
-      iconic: 'Shell staff, flowing hair and tidal halo.',
-      animation: 'Levitating idle, charge pulse and whip-like release on cast.',
-      feedback: 'Ripple ring, violet splash and soft energy bloom on impact.',
-      size: '1x2',
-      tone: 'support',
-    },
-  },
-  {
-    id: 'powder',
-    name: 'Powder Burst',
-    role: 'Hechizo',
-    battleRole: 'Hechizo de area',
-    type: 'spell',
-    rarity: 'Epic',
+    rarity: 'Common',
     cost: 3,
     level: 1,
     progress: 0,
     progressMax: 2,
-    damage: 76,
+    hp: 126,
+    damage: 16,
+    speed: 14,
+    range: 5,
+    cooldown: 0.72,
+    movement: 'air',
+    attackTarget: 'air-ground',
+    attackPattern: 'single',
+    unitClass: 'troop',
+    color: '#6a7cff',
+    accent: '#e8ebff',
+    summary: 'Escuadron aereo rapido que araña con sus garras.',
+    art: {
+      silhouette: 'Tres criaturas pequeñas con alas y garras.',
+      shape: 'Grupo aereo compacto y nervioso.',
+      palette: 'Azul oscuro, lila y ojos claros.',
+      iconic: 'Alas, cuernos y garras.',
+      animation: 'Aleteo rapido y zarpazo corto.',
+      feedback: 'Arañazo brillante y rebote aereo.',
+      size: '1x2',
+      tone: 'damage',
+    },
+  },
+  {
+    id: 'arrows',
+    name: 'Flechas',
+    role: 'Hechizo',
+    battleRole: 'Limpieza ligera',
+    type: 'spell',
+    rarity: 'Common',
+    cost: 3,
+    level: 1,
+    progress: 0,
+    progressMax: 2,
+    damage: 42,
+    range: 16,
+    splashRadius: 14,
+    color: '#f6d48a',
+    accent: '#fff4d9',
+    summary: 'Lluvia de flechas para limpiar tropas pequeñas.',
+    art: {
+      silhouette: 'Haz de flechas cayendo en abanico.',
+      shape: 'Diagonal multiple y rapida.',
+      palette: 'Dorado, madera y crema.',
+      iconic: 'Plumas y puntas de flecha.',
+      animation: 'Caida rapida desde arriba.',
+      feedback: 'Pequeños impactos encadenados.',
+      size: '1x2',
+      tone: 'spell',
+    },
+  },
+  {
+    id: 'fireball',
+    name: 'Bola de Fuego',
+    role: 'Hechizo',
+    battleRole: 'Area pesada',
+    type: 'spell',
+    rarity: 'Epic',
+    cost: 4,
+    level: 1,
+    progress: 0,
+    progressMax: 2,
+    damage: 86,
     range: 16,
     splashRadius: 15,
-    color: '#ff7aa6',
-    accent: '#ffe6ef',
-    summary: 'Explosion rapida de area para limpiar tropas agrupadas o rascar torre.',
+    color: '#ff8f52',
+    accent: '#ffe7c9',
+    summary: 'Proyectil pesado de area para castigar apoyos y torres.',
     art: {
-      silhouette: 'Circular burn marker with a central fuse spark.',
-      shape: 'Round telegraph, uneven smoke ring and explosive center.',
-      palette: 'Hot pink, orange powder and pale ash smoke.',
-      iconic: 'Fuse spark, soot ring and blast bloom.',
-      animation: 'Ground marker, falling spark and abrupt sphere explosion.',
-      feedback: 'Strong flash, shock ring and black cinder particles.',
+      silhouette: 'Esfera de fuego con cola ardiente.',
+      shape: 'Masa redonda con estela diagonal.',
+      palette: 'Naranja, rojo y amarillo.',
+      iconic: 'Nucleo brillante y humo.',
+      animation: 'Caida y explosion fuerte.',
+      feedback: 'Flash calido y anillo de fuego.',
       size: '1x2',
       tone: 'spell',
     },
@@ -425,9 +430,9 @@ const towerBlueprints: Record<Tower['kind'], TowerBlueprint> = {
   },
 }
 
-const initialDeck = ['runner', 'gunner', 'bulwark', 'powder', 'parrot', 'cannon', 'brute', 'siren']
+const initialDeck = ['knight', 'giant', 'minipekka', 'archers', 'cannon', 'minions', 'arrows', 'fireball']
 const initialOwned = cards.map((card) => card.id)
-const botDeck = ['runner', 'gunner', 'bulwark', 'parrot', 'cannon', 'brute', 'siren', 'powder']
+const botDeck = ['knight', 'archers', 'minipekka', 'minions', 'cannon', 'giant', 'arrows', 'fireball']
 
 const rarityClass: Record<Card['rarity'], string> = {
   Common: 'rarity-common',
@@ -525,8 +530,21 @@ function CardArt({ card, battle = false }: { card: Card; battle?: boolean }) {
   )
 }
 
+function CharacterVisual({ unit }: { unit: Unit }) {
+  return (
+    <div className={`battle-character char-${unit.cardId} side-${unit.side}`}>
+      <div className="character-shadow" />
+      <div className="character-body-main" />
+      <div className="character-head-main" />
+      <div className="character-weapon-main" />
+      <div className="character-detail-main" />
+      <div className="character-effect-main" />
+    </div>
+  )
+}
+
 function TowerVisual({ tower, preview = false }: { tower: Tower | TowerBlueprint; preview?: boolean }) {
-  const kind = 'kind' in tower ? tower.kind : tower.name.includes('King') ? 'king' : 'archer'
+  const kind = 'kind' in tower ? tower.kind : tower.name.includes('Rey') ? 'king' : 'archer'
   const sideClass = preview ? `preview-${kind}` : 'side' in tower ? tower.side : 'player'
 
   return (
@@ -547,17 +565,34 @@ function sortByDistance<T extends { x: number; y: number }>(source: { x: number;
   return [...items].sort((a, b) => Math.hypot(a.x - source.x, a.y - source.y) - Math.hypot(b.x - source.x, b.y - source.y))
 }
 
+function getAttackFx(cardId: string): ProjectileKind {
+  switch (cardId) {
+    case 'archers':
+      return 'arrow'
+    case 'cannon':
+      return 'cannonball'
+    case 'fireball':
+      return 'fireball'
+    case 'minions':
+      return 'claw'
+    default:
+      return 'slash'
+  }
+}
+
 export default function HomePage() {
   const [tab, setTab] = useState<Tab>('battle')
   const [screen, setScreen] = useState<Screen>('home')
   const [account, setAccount] = useState<Account>({ name: 'Nuevo Pirata', level: 1, gold: 0, gems: 0, trophies: 0 })
   const [owned] = useState<string[]>(initialOwned)
   const [deck, setDeck] = useState<string[]>(initialDeck)
+  const [battleQueue, setBattleQueue] = useState<string[]>(initialDeck)
   const [selectedDeckSlot, setSelectedDeckSlot] = useState(0)
   const [selectedCardId, setSelectedCardId] = useState(deck[0])
   const [dragState, setDragState] = useState<DragState | null>(null)
   const [towers, setTowers] = useState<Tower[]>(makeTowers())
   const [units, setUnits] = useState<Unit[]>([])
+  const [projectiles, setProjectiles] = useState<Projectile[]>([])
   const [playerEnergy, setPlayerEnergy] = useState(5)
   const [botEnergy, setBotEnergy] = useState(5)
   const [timeLeft, setTimeLeft] = useState(battleDuration)
@@ -565,6 +600,7 @@ export default function HomePage() {
 
   const arenaRef = useRef<HTMLDivElement | null>(null)
   const unitIdRef = useRef(1)
+  const projectileIdRef = useRef(1)
   const unitsRef = useRef<Unit[]>([])
   const towersRef = useRef<Tower[]>(makeTowers())
   const botEnergyRef = useRef(5)
@@ -599,7 +635,7 @@ export default function HomePage() {
   }, [timeLeft])
 
   const visibleDeck = useMemo(() => deck.map((cardId) => getCard(cardId)), [deck])
-  const battleHand = useMemo(() => deck.slice(0, 4).map((cardId) => getCard(cardId)), [deck])
+  const battleHand = useMemo(() => battleQueue.slice(0, 4).map((cardId) => getCard(cardId)), [battleQueue])
   const ownedCards = useMemo(() => cards.filter((card) => owned.includes(card.id)), [owned])
   const selectedDetailCard = getCard(selectedCardId)
   const averageElixir = useMemo(() => (visibleDeck.reduce((sum, card) => sum + card.cost, 0) / visibleDeck.length).toFixed(1), [visibleDeck])
@@ -607,11 +643,14 @@ export default function HomePage() {
   const resetBattle = () => {
     setTowers(makeTowers())
     setUnits([])
+    setProjectiles([])
+    setBattleQueue(deck)
     setPlayerEnergy(5)
     setBotEnergy(5)
     setTimeLeft(battleDuration)
     setResult(null)
     unitIdRef.current = 1
+    projectileIdRef.current = 1
     botThinkRef.current = 0
   }
 
@@ -630,6 +669,15 @@ export default function HomePage() {
 
     if (card.type === 'spell') {
       const radius = card.splashRadius ?? 14
+
+      if (card.id === 'arrows') {
+        for (let index = 0; index < 4; index += 1) {
+          const offsetX = (index - 1.5) * 2.2
+          spawnProjectile('arrow', side, x + offsetX, y - 18 - index * 2, x + offsetX * 0.4, y)
+        }
+      } else if (card.id === 'fireball') {
+        spawnProjectile('fireball', side, x - 8, y - 20, x, y)
+      }
 
       setUnits((current) =>
         current
@@ -677,6 +725,7 @@ export default function HomePage() {
         role: card.role,
         tone: card.art.tone,
         size: card.art.size,
+        attackFx: getAttackFx(card.id),
       },
     ])
   }
@@ -693,6 +742,11 @@ export default function HomePage() {
     const y = (row + 0.5) * (100 / rows)
     summon(card.id, 'player', x, y)
     setPlayerEnergy((current) => clamp(current - card.cost, 0, maxEnergy))
+    setBattleQueue((current) => {
+      const played = current[cardIndex]
+      const next = current.filter((_, index) => index !== cardIndex)
+      return [...next, played]
+    })
   }
 
   const onCardPointerDown = (cardIndex: number, event: React.PointerEvent<HTMLButtonElement>) => {
@@ -782,12 +836,42 @@ export default function HomePage() {
     }
   }
 
+  const spawnProjectile = (kind: ProjectileKind, side: Side, fromX: number, fromY: number, toX: number, toY: number) => {
+    const dx = toX - fromX
+    const dy = toY - fromY
+    const distance = Math.hypot(dx, dy) || 1
+    const speed = kind === 'cannonball' ? 42 : kind === 'fireball' ? 48 : 64
+    setProjectiles((current) => [
+      ...current,
+      {
+        id: projectileIdRef.current++,
+        kind,
+        side,
+        x: fromX,
+        y: fromY,
+        vx: (dx / distance) * speed,
+        vy: (dy / distance) * speed,
+        ttl: distance / speed + 0.18,
+      },
+    ])
+  }
+
   useEffect(() => {
     if (screen !== 'battle' || result) return
 
     const timer = window.setInterval(() => {
       const delta = 0.1
       setTimeLeft((current) => Math.max(0, current - delta))
+      setProjectiles((current) =>
+        current
+          .map((projectile) => ({
+            ...projectile,
+            x: projectile.x + projectile.vx * delta,
+            y: projectile.y + projectile.vy * delta,
+            ttl: projectile.ttl - delta,
+          }))
+          .filter((projectile) => projectile.ttl > 0)
+      )
 
       const regen = timeRef.current <= 30 ? 0.88 : 0.45
       setPlayerEnergy((current) => clamp(current + regen * delta, 0, maxEnergy))
@@ -806,6 +890,7 @@ export default function HomePage() {
 
           if (distance <= unit.range) {
             if (unit.attackTimer <= 0) {
+              spawnProjectile(unit.attackFx, unit.side, unit.x, unit.y, target.x, target.y)
               if (target.kind === 'unit') {
                 unitDamage.set(target.id, (unitDamage.get(target.id) ?? 0) + unit.damage)
               } else {
@@ -852,6 +937,7 @@ export default function HomePage() {
           )[0]
 
           if (target && Math.hypot(target.x - tower.x, target.y - tower.y) <= tower.range) {
+            spawnProjectile('arrow', tower.side, tower.x, tower.y, target.x, target.y)
             unitDamage.set(target.id, (unitDamage.get(target.id) ?? 0) + tower.damage)
             tower.attackTimer = tower.cooldown
           }
@@ -943,20 +1029,26 @@ export default function HomePage() {
             {towers.map((tower) => (
               <div className="battle-tower" key={tower.id} style={{ left: `${tower.x}%`, top: `${tower.y}%` }}>
                 <TowerVisual tower={tower} />
+                <div className="tower-hp-number">{tower.hp}</div>
                 <div className="tower-hp"><i style={{ width: `${(tower.hp / tower.maxHp) * 100}%` }} /></div>
               </div>
             ))}
 
-            {units.map((unit) => {
-              const unitCard = getCard(unit.cardId)
+            {projectiles.map((projectile) => (
+              <div
+                className={`projectile projectile-${projectile.kind} ${projectile.side}`}
+                key={projectile.id}
+                style={{ left: `${projectile.x}%`, top: `${projectile.y}%` }}
+              />
+            ))}
 
+            {units.map((unit) => {
               return (
                 <div className={`unit-node ${unit.side} tone-${unit.tone} size-${unit.size.replace('x', '-')} move-${unit.movement}`} key={unit.id} style={{ left: `${unit.x}%`, top: `${unit.y}%` }}>
                   <div className="unit-ring" />
-                  <div className="unit-card-shell">
-                    <CardArt card={unitCard} battle />
-                  </div>
+                  <CharacterVisual unit={unit} />
                   <div className="unit-label">{unit.name}</div>
+                  <div className="unit-hp-number">{unit.hp}</div>
                   <div className="unit-hp"><i style={{ width: `${(unit.hp / unit.maxHp) * 100}%` }} /></div>
                 </div>
               )
@@ -992,7 +1084,7 @@ export default function HomePage() {
                 </div>
                 <strong>{card.name}</strong>
                 <span className="hand-role">{card.battleRole}</span>
-                <span className="hand-meta">{getPatternLabel(card.attackPattern)} · {getTargetLabel(card.attackTarget)}</span>
+                <span className="hand-meta">{getPatternLabel(card.attackPattern)} / {getTargetLabel(card.attackTarget)}</span>
               </button>
             ))}
           </div>
