@@ -2,140 +2,228 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-type Side = 'player' | 'enemy'
+type Screen = 'home' | 'practice'
 type Lane = 0 | 1
-type CardKind = 'unit' | 'spell'
+type Side = 'player' | 'bot'
+type CardType = 'unit' | 'spell'
 
-type CardDefinition = {
+type Card = {
   id: string
   name: string
-  title: string
-  type: CardKind
+  type: CardType
   cost: number
-  health?: number
-  damage?: number
+  hp?: number
+  damage: number
   speed?: number
   range?: number
   cooldown?: number
+  flavor: string
+  rarity: 'Common' | 'Rare' | 'Epic'
   color: string
-  accent: string
-  description: string
+  price: number
 }
 
-type UnitState = {
+type Unit = {
   id: number
   cardId: string
-  name: string
   side: Side
   lane: Lane
   x: number
-  health: number
-  maxHealth: number
+  hp: number
+  maxHp: number
   damage: number
   speed: number
   range: number
   cooldown: number
   attackTimer: number
   color: string
-  accent: string
+  name: string
 }
 
-type TowerState = {
+type Tower = {
   id: string
-  name: string
   side: Side
   lane: Lane | null
   x: number
-  health: number
-  maxHealth: number
+  hp: number
+  maxHp: number
   damage: number
   range: number
   cooldown: number
   attackTimer: number
+  label: string
 }
 
-type FloatingText = {
-  id: number
-  lane: Lane
-  x: number
-  y: number
-  text: string
-  color: string
-  ttl: number
-}
-
-const GAME_DURATION = 150
-const PLAYER_SPAWN_X = 16
-const ENEMY_SPAWN_X = 84
-const ENERGY_MAX = 10
-const ENERGY_REGEN = 0.42
-const DOUBLE_ENERGY_TIME = 45
-const AI_DECISION_INTERVAL = 2.8
-
-const cardDefinitions: CardDefinition[] = [
-  { id: 'cutlass-raider', name: 'Corsario', title: 'Cutlass Raider', type: 'unit', cost: 3, health: 180, damage: 24, speed: 9, range: 4, cooldown: 0.75, color: '#ffbe5c', accent: '#fff1c8', description: 'Espadachin rapido para presion constante.' },
-  { id: 'reef-musician', name: 'Musico', title: 'Reef Musician', type: 'unit', cost: 4, health: 150, damage: 35, speed: 7, range: 17, cooldown: 1, color: '#79e3ff', accent: '#e0fbff', description: 'Apoyo a distancia con ritmos de marea.' },
-  { id: 'anchor-brute', name: 'Bruto', title: 'Anchor Brute', type: 'unit', cost: 5, health: 320, damage: 42, speed: 5, range: 5, cooldown: 1.2, color: '#ff8566', accent: '#ffe1d8', description: 'Tanque pesado para abrir paso.' },
-  { id: 'storm-caller', name: 'Tormenta', title: 'Storm Caller', type: 'spell', cost: 4, damage: 95, color: '#77a8ff', accent: '#edf3ff', description: 'Descarga electrica que limpia una linea.' },
-  { id: 'harpoon-hunter', name: 'Arponero', title: 'Harpoon Hunter', type: 'unit', cost: 2, health: 92, damage: 18, speed: 11, range: 11, cooldown: 0.85, color: '#8be38b', accent: '#efffe7', description: 'Unidad barata para rotacion y chip.' },
-  { id: 'tide-sorcerer', name: 'Marea', title: 'Tide Sorcerer', type: 'unit', cost: 4, health: 140, damage: 28, speed: 7, range: 15, cooldown: 0.7, color: '#9a87ff', accent: '#f2eeff', description: 'Hechicero veloz con dano sostenido.' },
-  { id: 'deck-guard', name: 'Guardia', title: 'Deck Guard', type: 'unit', cost: 3, health: 220, damage: 20, speed: 6, range: 4, cooldown: 0.8, color: '#ffd972', accent: '#fff7d1', description: 'Defensor equilibrado para aguantar pushes.' },
-  { id: 'powder-burst', name: 'Polvora', title: 'Powder Burst', type: 'spell', cost: 3, damage: 68, color: '#ff7f98', accent: '#ffe5ec', description: 'Explosion rapida para rematar tropas.' },
+const cards: Card[] = [
+  {
+    id: 'deckhand',
+    name: 'Deckhand',
+    type: 'unit',
+    cost: 2,
+    hp: 110,
+    damage: 18,
+    speed: 8,
+    range: 5,
+    cooldown: 0.9,
+    flavor: 'Barato y rapido para rotar.',
+    rarity: 'Common',
+    color: '#ffd161',
+    price: 0,
+  },
+  {
+    id: 'gunner',
+    name: 'Coral Gunner',
+    type: 'unit',
+    cost: 3,
+    hp: 120,
+    damage: 28,
+    speed: 6,
+    range: 18,
+    cooldown: 1.1,
+    flavor: 'Apoyo a distancia para limpiar linea.',
+    rarity: 'Common',
+    color: '#83d9ff',
+    price: 0,
+  },
+  {
+    id: 'brute',
+    name: 'Anchor Brute',
+    type: 'unit',
+    cost: 5,
+    hp: 300,
+    damage: 36,
+    speed: 4,
+    range: 5,
+    cooldown: 1.2,
+    flavor: 'Tanque frontal para empujar.',
+    rarity: 'Rare',
+    color: '#ff9e6b',
+    price: 220,
+  },
+  {
+    id: 'singer',
+    name: 'Tide Singer',
+    type: 'unit',
+    cost: 4,
+    hp: 150,
+    damage: 24,
+    speed: 6,
+    range: 16,
+    cooldown: 0.8,
+    flavor: 'Disparo constante con buen alcance.',
+    rarity: 'Rare',
+    color: '#9aa8ff',
+    price: 180,
+  },
+  {
+    id: 'bomb',
+    name: 'Powder Burst',
+    type: 'spell',
+    cost: 3,
+    damage: 72,
+    flavor: 'Explota una linea y remata tropas.',
+    rarity: 'Common',
+    color: '#ff7f9f',
+    price: 140,
+  },
+  {
+    id: 'storm',
+    name: 'Storm Call',
+    type: 'spell',
+    cost: 4,
+    damage: 96,
+    flavor: 'Golpe fuerte de area.',
+    rarity: 'Epic',
+    color: '#86a8ff',
+    price: 320,
+  },
+  {
+    id: 'guard',
+    name: 'Harbor Guard',
+    type: 'unit',
+    cost: 3,
+    hp: 220,
+    damage: 21,
+    speed: 5,
+    range: 5,
+    cooldown: 1,
+    flavor: 'Defensa estable y barata.',
+    rarity: 'Common',
+    color: '#a6e38a',
+    price: 120,
+  },
+  {
+    id: 'captain',
+    name: 'Wave Captain',
+    type: 'unit',
+    cost: 4,
+    hp: 210,
+    damage: 32,
+    speed: 6,
+    range: 8,
+    cooldown: 0.95,
+    flavor: 'Carta versatil para cerrar push.',
+    rarity: 'Epic',
+    color: '#caa6ff',
+    price: 350,
+  },
 ]
 
-const playerDeck = ['cutlass-raider', 'reef-musician', 'anchor-brute', 'storm-caller', 'harpoon-hunter', 'tide-sorcerer', 'deck-guard', 'powder-burst']
-const enemyDeck = ['deck-guard', 'powder-burst', 'anchor-brute', 'harpoon-hunter', 'reef-musician', 'storm-caller', 'cutlass-raider', 'tide-sorcerer']
+const initialOwned = ['deckhand', 'gunner', 'bomb', 'guard']
+const initialDeck = ['deckhand', 'gunner', 'bomb', 'guard', 'deckhand', 'gunner', 'bomb', 'guard']
+const botDeck = ['deckhand', 'guard', 'gunner', 'bomb', 'brute', 'singer', 'deckhand', 'bomb']
 
-const cardById = Object.fromEntries(cardDefinitions.map((card) => [card.id, card])) as Record<string, CardDefinition>
+const MAX_ENERGY = 10
+const MATCH_TIME = 120
 
-function createInitialTowers(): TowerState[] {
-  return [
-    { id: 'player-port', name: 'Canon de Babor', side: 'player', lane: 0, x: 20, health: 420, maxHealth: 420, damage: 22, range: 24, cooldown: 1.15, attackTimer: 0 },
-    { id: 'player-starboard', name: 'Canon de Estribor', side: 'player', lane: 1, x: 20, health: 420, maxHealth: 420, damage: 22, range: 24, cooldown: 1.15, attackTimer: 0 },
-    { id: 'player-flagship', name: 'Flagship', side: 'player', lane: null, x: 8, health: 900, maxHealth: 900, damage: 30, range: 28, cooldown: 1.35, attackTimer: 0 },
-    { id: 'enemy-port', name: 'Canon de Babor', side: 'enemy', lane: 0, x: 80, health: 420, maxHealth: 420, damage: 22, range: 24, cooldown: 1.15, attackTimer: 0 },
-    { id: 'enemy-starboard', name: 'Canon de Estribor', side: 'enemy', lane: 1, x: 80, health: 420, maxHealth: 420, damage: 22, range: 24, cooldown: 1.15, attackTimer: 0 },
-    { id: 'enemy-flagship', name: 'Flagship', side: 'enemy', lane: null, x: 92, health: 900, maxHealth: 900, damage: 30, range: 28, cooldown: 1.35, attackTimer: 0 },
-  ]
+function byId(id: string) {
+  return cards.find((card) => card.id === id)!
 }
 
 function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value))
+  return Math.max(min, Math.min(max, value))
 }
 
-function formatTime(timeLeft: number) {
-  const total = Math.max(0, Math.ceil(timeLeft))
+function formatTime(value: number) {
+  const total = Math.max(0, Math.ceil(value))
   const minutes = Math.floor(total / 60)
   const seconds = total % 60
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
-function healthPercent(current: number, max: number) {
-  return `${clamp((current / max) * 100, 0, 100)}%`
+function makeTowers(): Tower[] {
+  return [
+    { id: 'p-top', side: 'player', lane: 0, x: 18, hp: 420, maxHp: 420, damage: 22, range: 22, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
+    { id: 'p-bottom', side: 'player', lane: 1, x: 18, hp: 420, maxHp: 420, damage: 22, range: 22, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
+    { id: 'p-king', side: 'player', lane: null, x: 7, hp: 900, maxHp: 900, damage: 28, range: 25, cooldown: 1.2, attackTimer: 0, label: 'Flagship' },
+    { id: 'b-top', side: 'bot', lane: 0, x: 82, hp: 420, maxHp: 420, damage: 22, range: 22, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
+    { id: 'b-bottom', side: 'bot', lane: 1, x: 82, hp: 420, maxHp: 420, damage: 22, range: 22, cooldown: 1.1, attackTimer: 0, label: 'Tower' },
+    { id: 'b-king', side: 'bot', lane: null, x: 93, hp: 900, maxHp: 900, damage: 28, range: 25, cooldown: 1.2, attackTimer: 0, label: 'Flagship' },
+  ]
 }
 
 export default function HomePage() {
-  const [units, setUnits] = useState<UnitState[]>([])
-  const [towers, setTowers] = useState<TowerState[]>(createInitialTowers)
-  const [playerEnergy, setPlayerEnergy] = useState(6)
-  const [enemyEnergy, setEnemyEnergy] = useState(6)
-  const [selectedCardId, setSelectedCardId] = useState(playerDeck[0])
-  const [selectedLane, setSelectedLane] = useState<Lane>(0)
-  const [timeLeft, setTimeLeft] = useState(GAME_DURATION)
-  const [battleState, setBattleState] = useState<'running' | 'finished'>('running')
+  const [screen, setScreen] = useState<Screen>('home')
+  const [gold, setGold] = useState(500)
+  const [owned, setOwned] = useState<string[]>(initialOwned)
+  const [deck, setDeck] = useState<string[]>(initialDeck)
+  const [selectedDeckSlot, setSelectedDeckSlot] = useState(0)
+  const [selectedBattleCard, setSelectedBattleCard] = useState(0)
+  const [playerEnergy, setPlayerEnergy] = useState(5)
+  const [botEnergy, setBotEnergy] = useState(5)
+  const [timeLeft, setTimeLeft] = useState(MATCH_TIME)
+  const [units, setUnits] = useState<Unit[]>([])
+  const [towers, setTowers] = useState<Tower[]>(makeTowers())
   const [winner, setWinner] = useState<string | null>(null)
-  const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([])
-  const [battleLog, setBattleLog] = useState<string[]>(['La arena esta lista. Despliega cartas en una linea para romper el barco rival.'])
+  const [log, setLog] = useState<string[]>(['Pulsa Practica para jugar contra el bot.'])
+  const [shopIndex, setShopIndex] = useState(0)
 
   const unitIdRef = useRef(1)
-  const textIdRef = useRef(1)
-  const aiDecisionRef = useRef(0)
-  const unitsRef = useRef<UnitState[]>([])
-  const towersRef = useRef<TowerState[]>(createInitialTowers())
-  const enemyEnergyRef = useRef(6)
-  const timeLeftRef = useRef(GAME_DURATION)
-
-  const liveCards = useMemo(() => playerDeck.map((id) => cardById[id]), [])
+  const botDecisionRef = useRef(0)
+  const unitsRef = useRef<Unit[]>([])
+  const towersRef = useRef<Tower[]>([])
+  const botEnergyRef = useRef(5)
+  const timeLeftRef = useRef(MATCH_TIME)
 
   useEffect(() => {
     unitsRef.current = units
@@ -146,418 +234,540 @@ export default function HomePage() {
   }, [towers])
 
   useEffect(() => {
-    enemyEnergyRef.current = enemyEnergy
-  }, [enemyEnergy])
+    botEnergyRef.current = botEnergy
+  }, [botEnergy])
 
   useEffect(() => {
     timeLeftRef.current = timeLeft
   }, [timeLeft])
 
-  const addLog = (message: string) => {
-    setBattleLog((current) => [message, ...current].slice(0, 6))
+  const ownedCards = useMemo(() => cards.filter((card) => owned.includes(card.id)), [owned])
+  const shopCards = useMemo(() => cards.filter((card) => !owned.includes(card.id)), [owned])
+  const practiceHand = useMemo(() => deck.map((id) => byId(id)), [deck])
+  const activeShopCard = shopCards[shopIndex] ?? null
+
+  const pushLog = (message: string) => {
+    setLog((current) => [message, ...current].slice(0, 6))
   }
 
-  const addFloatingText = (lane: Lane, x: number, text: string, color: string) => {
-    const id = textIdRef.current++
-    setFloatingTexts((current) => [...current, { id, lane, x, y: lane === 0 ? 26 : 74, text, color, ttl: 0.9 }])
+  const resetPractice = () => {
+    setUnits([])
+    setTowers(makeTowers())
+    setPlayerEnergy(5)
+    setBotEnergy(5)
+    setTimeLeft(MATCH_TIME)
+    setWinner(null)
+    setSelectedBattleCard(0)
+    setLog(['Modo practica activo. Despliega tropas tocando una linea.'])
+    unitIdRef.current = 1
+    botDecisionRef.current = 0
   }
 
-  const summonCard = (cardId: string, side: Side, lane: Lane) => {
-    const card = cardById[cardId]
-    if (!card) return false
+  const startPractice = () => {
+    resetPractice()
+    setScreen('practice')
+  }
+
+  const swapDeckCard = (cardId: string) => {
+    setDeck((current) => current.map((value, index) => (index === selectedDeckSlot ? cardId : value)))
+  }
+
+  const buyCard = () => {
+    if (!activeShopCard || gold < activeShopCard.price) return
+    setGold((value) => value - activeShopCard.price)
+    setOwned((current) => [...current, activeShopCard.id])
+    pushLog(`Has comprado ${activeShopCard.name}.`)
+    setShopIndex(0)
+  }
+
+  const summon = (cardId: string, side: Side, lane: Lane) => {
+    const card = byId(cardId)
 
     if (card.type === 'spell') {
-      setUnits((currentUnits) =>
-        currentUnits
+      setUnits((current) =>
+        current
           .map((unit) => {
             if (unit.side === side || unit.lane !== lane) return unit
-            addFloatingText(lane, unit.x, `-${card.damage}`, card.color)
-            return { ...unit, health: unit.health - (card.damage ?? 0) }
+            return { ...unit, hp: unit.hp - card.damage }
           })
-          .filter((unit) => unit.health > 0)
+          .filter((unit) => unit.hp > 0)
       )
 
-      setTowers((currentTowers) =>
-        currentTowers.map((tower) => {
+      setTowers((current) =>
+        current.map((tower) => {
           if (tower.side === side || (tower.lane !== lane && tower.lane !== null)) return tower
-          const damage = Math.round((card.damage ?? 0) * (tower.lane === null ? 0.55 : 0.7))
-          addFloatingText(lane, tower.x, `-${damage}`, card.color)
-          return { ...tower, health: Math.max(0, tower.health - damage) }
+          const dealt = Math.round(card.damage * (tower.lane === null ? 0.5 : 0.7))
+          return { ...tower, hp: Math.max(0, tower.hp - dealt) }
         })
       )
 
-      addLog(`${side === 'player' ? 'Tu tripulacion' : 'El rival'} lanzo ${card.title} en ${lane === 0 ? 'Babor' : 'Estribor'}.`)
-      return true
+      pushLog(`${side === 'player' ? 'Has usado' : 'El bot ha usado'} ${card.name}.`)
+      return
     }
 
-    const unit: UnitState = {
+    const unit: Unit = {
       id: unitIdRef.current++,
-      cardId: card.id,
-      name: card.title,
+      cardId,
       side,
       lane,
-      x: side === 'player' ? PLAYER_SPAWN_X : ENEMY_SPAWN_X,
-      health: card.health ?? 100,
-      maxHealth: card.health ?? 100,
-      damage: card.damage ?? 10,
-      speed: card.speed ?? 8,
+      x: side === 'player' ? 14 : 86,
+      hp: card.hp ?? 100,
+      maxHp: card.hp ?? 100,
+      damage: card.damage,
+      speed: card.speed ?? 6,
       range: card.range ?? 5,
       cooldown: card.cooldown ?? 1,
       attackTimer: 0,
       color: card.color,
-      accent: card.accent,
+      name: card.name,
     }
 
     setUnits((current) => [...current, unit])
-    addLog(`${side === 'player' ? 'Has jugado' : 'El enemigo invoco'} ${card.title} por ${lane === 0 ? 'Babor' : 'Estribor'}.`)
-    return true
+    pushLog(`${side === 'player' ? 'Has desplegado' : 'El bot despliega'} ${card.name} en ${lane === 0 ? 'la linea superior' : 'la linea inferior'}.`)
   }
 
-  const deployPlayerCard = (lane: Lane) => {
-    if (battleState !== 'running') return
-    const card = cardById[selectedCardId]
+  const deployPlayer = (lane: Lane) => {
+    if (winner) return
+    const card = practiceHand[selectedBattleCard]
     if (!card || playerEnergy < card.cost) return
-
-    const success = summonCard(card.id, 'player', lane)
-    if (success) {
-      setPlayerEnergy((current) => clamp(current - card.cost, 0, ENERGY_MAX))
-      setSelectedLane(lane)
-    }
-  }
-
-  const restartBattle = () => {
-    setUnits([])
-    setTowers(createInitialTowers())
-    setPlayerEnergy(6)
-    setEnemyEnergy(6)
-    setSelectedCardId(playerDeck[0])
-    setSelectedLane(0)
-    setTimeLeft(GAME_DURATION)
-    setBattleState('running')
-    setWinner(null)
-    setFloatingTexts([])
-    setBattleLog(['Nueva batalla. Tu tripulacion espera ordenes.'])
-    unitIdRef.current = 1
-    textIdRef.current = 1
-    aiDecisionRef.current = 0
+    summon(card.id, 'player', lane)
+    setPlayerEnergy((value) => clamp(value - card.cost, 0, MAX_ENERGY))
   }
 
   useEffect(() => {
-    if (battleState !== 'running') return
+    if (screen !== 'practice' || winner) return
 
-    let previous = performance.now()
-    let frameId = 0
-
-    const tick = (now: number) => {
-      const delta = Math.min((now - previous) / 1000, 0.05)
-      previous = now
+    const timer = window.setInterval(() => {
+      const delta = 0.1
 
       setTimeLeft((current) => Math.max(0, current - delta))
-      setFloatingTexts((current) => current.map((item) => ({ ...item, ttl: item.ttl - delta, y: item.y - delta * 7 })).filter((item) => item.ttl > 0))
 
-      const regenMultiplier = timeLeftRef.current <= DOUBLE_ENERGY_TIME ? 2 : 1
-      setPlayerEnergy((current) => clamp(current + ENERGY_REGEN * regenMultiplier * delta, 0, ENERGY_MAX))
-      setEnemyEnergy((current) => clamp(current + ENERGY_REGEN * regenMultiplier * delta, 0, ENERGY_MAX))
-      aiDecisionRef.current += delta
+      const regen = timeLeftRef.current <= 30 ? 0.8 : 0.4
+      setPlayerEnergy((current) => clamp(current + regen * delta, 0, MAX_ENERGY))
+      setBotEnergy((current) => clamp(current + regen * delta, 0, MAX_ENERGY))
 
       setUnits((currentUnits) => {
-        const updatedUnits = currentUnits.map((unit) => ({ ...unit, attackTimer: Math.max(0, unit.attackTimer - delta) }))
+        const updated = currentUnits.map((unit) => ({
+          ...unit,
+          attackTimer: Math.max(0, unit.attackTimer - delta),
+        }))
+
         const unitDamage = new Map<number, number>()
         const towerDamage = new Map<string, number>()
 
-        for (const unit of updatedUnits) {
-          if (unit.health <= 0) continue
-
+        for (const unit of updated) {
           const direction = unit.side === 'player' ? 1 : -1
-          const enemyUnits = updatedUnits.filter((other) => other.side !== unit.side && other.lane === unit.lane && other.health > 0)
-          const enemyTowers = towersRef.current.filter((tower) => tower.side !== unit.side && (tower.lane === unit.lane || tower.lane === null) && tower.health > 0).sort((a, b) => Math.abs(a.x - unit.x) - Math.abs(b.x - unit.x))
-          const nearestEnemyUnit = enemyUnits.sort((a, b) => Math.abs(a.x - unit.x) - Math.abs(b.x - unit.x))[0]
-          const nearestTower = enemyTowers[0]
-          const unitDistance = nearestEnemyUnit ? Math.abs(nearestEnemyUnit.x - unit.x) : Number.POSITIVE_INFINITY
-          const towerDistance = nearestTower ? Math.abs(nearestTower.x - unit.x) : Number.POSITIVE_INFINITY
+          const enemyUnits = updated
+            .filter((enemy) => enemy.side !== unit.side && enemy.lane === unit.lane)
+            .sort((a, b) => Math.abs(a.x - unit.x) - Math.abs(b.x - unit.x))
+          const enemyTowers = towersRef.current
+            .filter((tower) => tower.side !== unit.side && (tower.lane === unit.lane || tower.lane === null) && tower.hp > 0)
+            .sort((a, b) => Math.abs(a.x - unit.x) - Math.abs(b.x - unit.x))
 
-          if (nearestEnemyUnit && unitDistance <= unit.range) {
+          const enemyUnit = enemyUnits[0]
+          const enemyTower = enemyTowers[0]
+
+          if (enemyUnit && Math.abs(enemyUnit.x - unit.x) <= unit.range) {
             if (unit.attackTimer <= 0) {
-              unitDamage.set(nearestEnemyUnit.id, (unitDamage.get(nearestEnemyUnit.id) ?? 0) + unit.damage)
-              addFloatingText(unit.lane, nearestEnemyUnit.x, `-${unit.damage}`, unit.accent)
+              unitDamage.set(enemyUnit.id, (unitDamage.get(enemyUnit.id) ?? 0) + unit.damage)
               unit.attackTimer = unit.cooldown
             }
-          } else if (nearestTower && towerDistance <= unit.range) {
-            if (unit.attackTimer <= 0) {
-              towerDamage.set(nearestTower.id, (towerDamage.get(nearestTower.id) ?? 0) + unit.damage)
-              addFloatingText(unit.lane, nearestTower.x, `-${unit.damage}`, unit.accent)
-              unit.attackTimer = unit.cooldown
-            }
-          } else {
-            unit.x = clamp(unit.x + unit.speed * delta * direction, 6, 94)
+            continue
           }
+
+          if (enemyTower && Math.abs(enemyTower.x - unit.x) <= unit.range) {
+            if (unit.attackTimer <= 0) {
+              towerDamage.set(enemyTower.id, (towerDamage.get(enemyTower.id) ?? 0) + unit.damage)
+              unit.attackTimer = unit.cooldown
+            }
+            continue
+          }
+
+          unit.x = clamp(unit.x + unit.speed * delta * direction, 6, 94)
         }
 
         if (towerDamage.size > 0) {
-          setTowers((currentTowers) =>
-            currentTowers.map((tower) => {
-              const pendingDamage = towerDamage.get(tower.id)
-              return pendingDamage ? { ...tower, health: Math.max(0, tower.health - pendingDamage) } : tower
-            })
+          setTowers((current) =>
+            current.map((tower) =>
+              towerDamage.has(tower.id)
+                ? { ...tower, hp: Math.max(0, tower.hp - (towerDamage.get(tower.id) ?? 0)) }
+                : tower
+            )
           )
         }
 
-        return updatedUnits
-          .map((unit) => {
-            const pendingDamage = unitDamage.get(unit.id) ?? 0
-            return pendingDamage > 0 ? { ...unit, health: unit.health - pendingDamage } : unit
-          })
-          .filter((unit) => unit.health > 0)
+        return updated
+          .map((unit) =>
+            unitDamage.has(unit.id) ? { ...unit, hp: unit.hp - (unitDamage.get(unit.id) ?? 0) } : unit
+          )
+          .filter((unit) => unit.hp > 0)
       })
 
       setTowers((currentTowers) => {
-        const nextTowers = currentTowers.map((tower) => ({ ...tower, attackTimer: Math.max(0, tower.attackTimer - delta) }))
+        const updated = currentTowers.map((tower) => ({
+          ...tower,
+          attackTimer: Math.max(0, tower.attackTimer - delta),
+        }))
+
         const unitDamage = new Map<number, number>()
 
-        for (const tower of nextTowers) {
-          if (tower.health <= 0 || tower.attackTimer > 0) continue
+        for (const tower of updated) {
+          if (tower.hp <= 0 || tower.attackTimer > 0) continue
+          const target = unitsRef.current
+            .filter((unit) => unit.side !== tower.side && (tower.lane === null || unit.lane === tower.lane))
+            .sort((a, b) => Math.abs(a.x - tower.x) - Math.abs(b.x - tower.x))[0]
 
-          const targets = unitsRef.current
-            .filter((unit) => unit.side !== tower.side && unit.health > 0 && (tower.lane === null || unit.lane === tower.lane))
-            .sort((a, b) => Math.abs(a.x - tower.x) - Math.abs(b.x - tower.x))
-
-          const target = targets[0]
           if (target && Math.abs(target.x - tower.x) <= tower.range) {
             unitDamage.set(target.id, (unitDamage.get(target.id) ?? 0) + tower.damage)
-            addFloatingText(target.lane, target.x, `-${tower.damage}`, tower.side === 'player' ? '#ffe9b8' : '#ffd8d3')
             tower.attackTimer = tower.cooldown
           }
         }
 
         if (unitDamage.size > 0) {
-          setUnits((currentUnits) =>
-            currentUnits
-              .map((unit) => {
-                const pendingDamage = unitDamage.get(unit.id)
-                return pendingDamage ? { ...unit, health: unit.health - pendingDamage } : unit
-              })
-              .filter((unit) => unit.health > 0)
+          setUnits((current) =>
+            current
+              .map((unit) =>
+                unitDamage.has(unit.id) ? { ...unit, hp: unit.hp - (unitDamage.get(unit.id) ?? 0) } : unit
+              )
+              .filter((unit) => unit.hp > 0)
           )
         }
 
-        return nextTowers
+        return updated
       })
 
-      if (aiDecisionRef.current >= AI_DECISION_INTERVAL) {
-        aiDecisionRef.current = 0
-        const playable = enemyDeck.map((id) => cardById[id]).filter((card) => card.cost <= enemyEnergyRef.current).sort((a, b) => a.cost - b.cost)
+      botDecisionRef.current += delta
+      if (botDecisionRef.current >= 2.2) {
+        botDecisionRef.current = 0
+        const playable = botDeck.map(byId).filter((card) => card.cost <= botEnergyRef.current)
         if (playable.length > 0) {
-          const topPressure = unitsRef.current.filter((unit) => unit.side === 'player' && unit.lane === 0).length
-          const bottomPressure = unitsRef.current.filter((unit) => unit.side === 'player' && unit.lane === 1).length
-          const lane: Lane = topPressure > bottomPressure ? 0 : bottomPressure > topPressure ? 1 : Math.random() > 0.5 ? 1 : 0
-          const chosenCard = playable[playable.length - 1]
-          const success = summonCard(chosenCard.id, 'enemy', lane)
-          if (success) setEnemyEnergy((current) => clamp(current - chosenCard.cost, 0, ENERGY_MAX))
+          const lane: Lane =
+            unitsRef.current.filter((unit) => unit.side === 'player' && unit.lane === 0).length >
+            unitsRef.current.filter((unit) => unit.side === 'player' && unit.lane === 1).length
+              ? 0
+              : 1
+          const chosen = playable[Math.floor(Math.random() * playable.length)]
+          summon(chosen.id, 'bot', lane)
+          setBotEnergy((current) => clamp(current - chosen.cost, 0, MAX_ENERGY))
         }
       }
+    }, 100)
 
-      frameId = window.requestAnimationFrame(tick)
-    }
-
-    frameId = window.requestAnimationFrame(tick)
-    return () => window.cancelAnimationFrame(frameId)
-  }, [battleState])
+    return () => window.clearInterval(timer)
+  }, [screen, winner, practiceHand, selectedBattleCard])
 
   useEffect(() => {
-    const playerFlagship = towers.find((tower) => tower.id === 'player-flagship')
-    const enemyFlagship = towers.find((tower) => tower.id === 'enemy-flagship')
-    if (battleState === 'finished' || !playerFlagship || !enemyFlagship) return
+    if (screen !== 'practice' || winner) return
 
-    if (playerFlagship.health <= 0 || enemyFlagship.health <= 0 || timeLeft <= 0) {
-      const playerScore = towers.filter((tower) => tower.side === 'player').reduce((sum, tower) => sum + Math.max(0, tower.health), 0) + units.filter((unit) => unit.side === 'player').reduce((sum, unit) => sum + unit.health, 0)
-      const enemyScore = towers.filter((tower) => tower.side === 'enemy').reduce((sum, tower) => sum + Math.max(0, tower.health), 0) + units.filter((unit) => unit.side === 'enemy').reduce((sum, unit) => sum + unit.health, 0)
-      const result = enemyFlagship.health <= 0 ? 'Victoria pirata' : playerFlagship.health <= 0 ? 'Derrota' : playerScore >= enemyScore ? 'Victoria por puntos' : 'Derrota por puntos'
-      setWinner(result)
-      setBattleState('finished')
-      addLog(`Fin de partida: ${result}.`)
+    const playerKing = towers.find((tower) => tower.id === 'p-king')?.hp ?? 0
+    const botKing = towers.find((tower) => tower.id === 'b-king')?.hp ?? 0
+
+    if (playerKing <= 0) {
+      setWinner('Derrota')
+      pushLog('El bot ha destruido tu flagship.')
+      return
     }
-  }, [battleState, timeLeft, towers, units])
 
-  const playerTowers = towers.filter((tower) => tower.side === 'player')
-  const enemyTowers = towers.filter((tower) => tower.side === 'enemy')
-  const crownScore = { player: enemyTowers.filter((tower) => tower.health <= 0).length, enemy: playerTowers.filter((tower) => tower.health <= 0).length }
-  const regenLabel = timeLeft <= DOUBLE_ENERGY_TIME ? 'Doble energia' : 'Energia normal'
+    if (botKing <= 0) {
+      setWinner('Victoria')
+      pushLog('Has destruido el flagship rival.')
+      setGold((value) => value + 60)
+      return
+    }
 
-  return (
-    <main className="page-shell">
-      <section className="hero-panel">
-        <div className="hero-copy">
-          <p className="eyebrow">Pirates Card Battle</p>
-          <h1>Arena pirata en tiempo real con mazos, energia y asalto naval.</h1>
-          <p className="lead">
-            Este prototipo es una base original inspirada en el ritmo de un arena battler: despliegas cartas por linea, acumulas energia, defiendes tus canones y buscas hundir el flagship enemigo antes de que termine el tiempo.
-          </p>
-          <div className="hero-stats">
-            <article><strong>8</strong><span>cartas en el mazo</span></article>
-            <article><strong>2</strong><span>lineas de combate</span></article>
-            <article><strong>150s</strong><span>duracion de partida</span></article>
+    if (timeLeft <= 0) {
+      const playerTotal = towers.filter((tower) => tower.side === 'player').reduce((sum, tower) => sum + tower.hp, 0)
+      const botTotal = towers.filter((tower) => tower.side === 'bot').reduce((sum, tower) => sum + tower.hp, 0)
+      const result = playerTotal >= botTotal ? 'Victoria a tiempo' : 'Derrota a tiempo'
+      setWinner(result)
+      if (playerTotal >= botTotal) {
+        setGold((value) => value + 40)
+      }
+      pushLog(`La practica ha terminado: ${result}.`)
+    }
+  }, [screen, towers, timeLeft, winner])
+
+  const playerTop = towers.find((tower) => tower.id === 'p-top')
+  const playerBottom = towers.find((tower) => tower.id === 'p-bottom')
+  const playerKing = towers.find((tower) => tower.id === 'p-king')
+  const botTop = towers.find((tower) => tower.id === 'b-top')
+  const botBottom = towers.find((tower) => tower.id === 'b-bottom')
+  const botKing = towers.find((tower) => tower.id === 'b-king')
+
+  if (screen === 'practice') {
+    return (
+      <main className="battle-screen">
+        <header className="battle-header">
+          <button className="back-button" onClick={() => setScreen('home')} type="button">
+            Volver
+          </button>
+          <div className="battle-meta">
+            <div>
+              <span>Modo</span>
+              <strong>Practica</strong>
+            </div>
+            <div>
+              <span>Tiempo</span>
+              <strong>{formatTime(timeLeft)}</strong>
+            </div>
+            <div>
+              <span>Resultado</span>
+              <strong>{winner ?? 'En juego'}</strong>
+            </div>
           </div>
-        </div>
+        </header>
 
-        <div className="hero-side">
-          <div className="info-card">
-            <p className="eyebrow">Roadmap del MVP</p>
-            <ul>
-              <li>Combate en navegador con bot rival.</li>
-              <li>Mazo editable y progresion.</li>
-              <li>Matchmaking, backend y cuentas.</li>
-              <li>Arte, audio y monetizacion original.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section className="battle-layout">
-        <div className="arena-panel">
-          <div className="arena-topbar">
-            <div><span className="tiny-label">Estado</span><strong>{battleState === 'running' ? 'Batalla activa' : winner ?? 'Partida finalizada'}</strong></div>
-            <div><span className="tiny-label">Tiempo</span><strong>{formatTime(timeLeft)}</strong></div>
-            <div><span className="tiny-label">Ritmo</span><strong>{regenLabel}</strong></div>
+        <section className="arena-shell">
+          <div className="arena-score">
+            <article>
+              <span>Tu energia</span>
+              <strong>{playerEnergy.toFixed(1)}</strong>
+            </article>
+            <article>
+              <span>Bot</span>
+              <strong>{botEnergy.toFixed(1)}</strong>
+            </article>
           </div>
 
-          <div className="scoreboard">
-            <article className="score-card enemy"><span>Rival</span><strong>{crownScore.enemy}</strong><small>torres destruidas</small></article>
-            <article className="score-card player"><span>Tu tripulacion</span><strong>{crownScore.player}</strong><small>torres destruidas</small></article>
+          <div className="king-row">
+            <div className="king-card player">
+              <span>{playerKing?.label}</span>
+              <strong>{playerKing?.hp}/{playerKing?.maxHp}</strong>
+              <div className="hp"><i style={{ width: `${((playerKing?.hp ?? 0) / (playerKing?.maxHp ?? 1)) * 100}%` }} /></div>
+            </div>
+            <div className="king-card bot">
+              <span>{botKing?.label}</span>
+              <strong>{botKing?.hp}/{botKing?.maxHp}</strong>
+              <div className="hp"><i style={{ width: `${((botKing?.hp ?? 0) / (botKing?.maxHp ?? 1)) * 100}%` }} /></div>
+            </div>
           </div>
 
-          <div className="arena">
-            {[0, 1].map((laneNumber) => {
-              const lane = laneNumber as Lane
-              const laneName = lane === 0 ? 'Babor' : 'Estribor'
-              const lanePlayerTowers = playerTowers.filter((tower) => tower.lane === lane)
-              const laneEnemyTowers = enemyTowers.filter((tower) => tower.lane === lane)
-              const lanePlayerUnits = units.filter((unit) => unit.side === 'player' && unit.lane === lane)
-              const laneEnemyUnits = units.filter((unit) => unit.side === 'enemy' && unit.lane === lane)
+          {[0, 1].map((laneNumber) => {
+            const lane = laneNumber as Lane
+            const leftTower = lane === 0 ? playerTop : playerBottom
+            const rightTower = lane === 0 ? botTop : botBottom
+            const laneUnits = units.filter((unit) => unit.lane === lane)
 
-              return (
-                <button className={`lane ${selectedLane === lane ? 'lane-active' : ''}`} key={lane} onClick={() => deployPlayerCard(lane)} type="button">
-                  <div className="lane-header">
-                    <span>{laneName}</span>
-                    <small>Click para desplegar la carta seleccionada</small>
+            return (
+              <button className="lane-strip" key={lane} onClick={() => deployPlayer(lane)} type="button">
+                <div className="lane-top">
+                  <span>{lane === 0 ? 'Linea superior' : 'Linea inferior'}</span>
+                  <small>Haz click para tirar la carta seleccionada</small>
+                </div>
+
+                <div className="lane-field">
+                  <div className="river" />
+
+                  <div className="tower player" style={{ left: `${leftTower?.x ?? 18}%` }}>
+                    <span>{leftTower?.label}</span>
+                    <div className="hp"><i style={{ width: `${(((leftTower?.hp ?? 0) / (leftTower?.maxHp ?? 1)) * 100)}%` }} /></div>
                   </div>
 
-                  <div className="lane-water">
-                    <div className="lane-path" />
-                    {lanePlayerTowers.map((tower) => (
-                      <div className="tower-chip player" key={tower.id} style={{ left: `${tower.x}%` }}>
-                        <span>{tower.name}</span>
-                        <div className="hp-bar"><i style={{ width: healthPercent(tower.health, tower.maxHealth) }} /></div>
-                      </div>
-                    ))}
-                    {laneEnemyTowers.map((tower) => (
-                      <div className="tower-chip enemy" key={tower.id} style={{ left: `${tower.x}%` }}>
-                        <span>{tower.name}</span>
-                        <div className="hp-bar"><i style={{ width: healthPercent(tower.health, tower.maxHealth) }} /></div>
-                      </div>
-                    ))}
-                    {lanePlayerUnits.map((unit) => (
-                      <div className="unit-chip player" key={unit.id} style={{ left: `${unit.x}%`, background: unit.color, color: '#07121f' }}>
-                        <b>{unit.name}</b>
-                        <div className="hp-bar compact"><i style={{ width: healthPercent(unit.health, unit.maxHealth), background: unit.accent }} /></div>
-                      </div>
-                    ))}
-                    {laneEnemyUnits.map((unit) => (
-                      <div className="unit-chip enemy" key={unit.id} style={{ left: `${unit.x}%`, background: unit.color, color: '#07121f' }}>
-                        <b>{unit.name}</b>
-                        <div className="hp-bar compact"><i style={{ width: healthPercent(unit.health, unit.maxHealth), background: unit.accent }} /></div>
-                      </div>
-                    ))}
-                    {floatingTexts.filter((text) => text.lane === lane).map((text) => (
-                      <span className="floating-text" key={text.id} style={{ left: `${text.x}%`, top: `${text.y}%`, color: text.color, opacity: text.ttl }}>
-                        {text.text}
-                      </span>
-                    ))}
+                  <div className="tower bot" style={{ left: `${rightTower?.x ?? 82}%` }}>
+                    <span>{rightTower?.label}</span>
+                    <div className="hp"><i style={{ width: `${(((rightTower?.hp ?? 0) / (rightTower?.maxHp ?? 1)) * 100)}%` }} /></div>
+                  </div>
+
+                  {laneUnits.map((unit) => (
+                    <div
+                      className={`troop ${unit.side}`}
+                      key={unit.id}
+                      style={{ left: `${unit.x}%`, background: unit.color }}
+                    >
+                      <b>{unit.name}</b>
+                      <div className="hp mini"><i style={{ width: `${(unit.hp / unit.maxHp) * 100}%` }} /></div>
+                    </div>
+                  ))}
+                </div>
+              </button>
+            )
+          })}
+        </section>
+
+        <section className="practice-bottom">
+          <div className="hand-panel">
+            <div className="section-title">
+              <span>Mano de practica</span>
+              <strong>Tu mazo actual</strong>
+            </div>
+            <div className="hand-grid">
+              {practiceHand.map((card, index) => (
+                <button
+                  className={`battle-card ${selectedBattleCard === index ? 'battle-card-active' : ''} ${playerEnergy < card.cost ? 'battle-card-low' : ''}`}
+                  key={`${card.id}-${index}`}
+                  onClick={() => setSelectedBattleCard(index)}
+                  type="button"
+                >
+                  <div className="battle-card-top">
+                    <span className="cost">{card.cost}</span>
+                    <span className="rarity">{card.rarity}</span>
+                  </div>
+                  <h3>{card.name}</h3>
+                  <p>{card.flavor}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="log-panel practice-log">
+            <div className="section-title">
+              <span>Registro</span>
+              <strong>Que esta pasando</strong>
+            </div>
+            <div className="log-list">
+              {log.map((entry, index) => (
+                <article key={`${entry}-${index}`}>{entry}</article>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
+  return (
+    <main className="home-shell">
+      <header className="top-banner">
+        <div>
+          <p className="game-tag">Pirates Card Battle</p>
+          <h1>Arena naval de cartas con estructura tipo juego móvil competitivo.</h1>
+          <p className="subtitle">
+            Hemos rehecho la pantalla principal desde cero con una distribución parecida a la de un
+            juego de arena: mazos a la izquierda, acceso a batalla al centro y tienda a la derecha.
+          </p>
+        </div>
+        <div className="gold-box">
+          <span>Oro</span>
+          <strong>{gold}</strong>
+        </div>
+      </header>
+
+      <section className="hub-layout">
+        <aside className="panel deck-editor">
+          <div className="section-title">
+            <span>Editor de mazos</span>
+            <strong>Tu mazo activo</strong>
+          </div>
+
+          <div className="deck-slots">
+            {deck.map((cardId, index) => {
+              const card = byId(cardId)
+              return (
+                <button
+                  className={`slot-card ${selectedDeckSlot === index ? 'slot-card-active' : ''}`}
+                  key={`${cardId}-${index}`}
+                  onClick={() => setSelectedDeckSlot(index)}
+                  type="button"
+                >
+                  <span className="slot-index">{index + 1}</span>
+                  <div className="slot-card-body">
+                    <strong>{card.name}</strong>
+                    <small>{card.cost} elixir</small>
                   </div>
                 </button>
               )
             })}
+          </div>
 
-            <div className="flagships">
-              {playerTowers.filter((tower) => tower.lane === null).map((tower) => (
-                <article className="flagship-card player" key={tower.id}>
-                  <span>{tower.name}</span>
-                  <strong>{tower.health}/{tower.maxHealth}</strong>
-                  <div className="hp-bar"><i style={{ width: healthPercent(tower.health, tower.maxHealth) }} /></div>
-                </article>
-              ))}
-              {enemyTowers.filter((tower) => tower.lane === null).map((tower) => (
-                <article className="flagship-card enemy" key={tower.id}>
-                  <span>{tower.name}</span>
-                  <strong>{tower.health}/{tower.maxHealth}</strong>
-                  <div className="hp-bar"><i style={{ width: healthPercent(tower.health, tower.maxHealth) }} /></div>
-                </article>
-              ))}
+          <div className="collection-grid">
+            {ownedCards.map((card) => (
+              <button className="collection-card" key={card.id} onClick={() => swapDeckCard(card.id)} type="button">
+                <div className="battle-card-top">
+                  <span className="cost">{card.cost}</span>
+                  <span className="rarity">{card.rarity}</span>
+                </div>
+                <h3>{card.name}</h3>
+                <p>{card.flavor}</p>
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        <section className="panel center-stage">
+          <div className="arena-preview">
+            <div className="arena-preview-header">
+              <span>Puerto Esmeralda</span>
+              <strong>Batalla 1v1</strong>
+            </div>
+            <div className="preview-board">
+              <div className="preview-lane">
+                <i className="mini-tower left" />
+                <i className="mini-boat mid" />
+                <i className="mini-tower right" />
+              </div>
+              <div className="preview-lane">
+                <i className="mini-tower left" />
+                <i className="mini-boat mid" />
+                <i className="mini-tower right" />
+              </div>
             </div>
           </div>
 
-          <div className="arena-actions">
-            <button className="secondary-button" onClick={restartBattle} type="button">Reiniciar partida</button>
-            <p>Selecciona una carta debajo y pulsa una linea para invocarla. Si no tienes energia suficiente, espera a la recarga.</p>
+          <div className="play-actions">
+            <button className="big-play practice" onClick={startPractice} type="button">
+              Practica
+            </button>
+            <button className="big-play multiplayer" type="button" disabled>
+              Multijugador
+              <small>Proximamente</small>
+            </button>
           </div>
-        </div>
 
-        <aside className="sidebar">
-          <section className="deck-panel">
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">Deck</p>
-                <h2>Mazo activo</h2>
-              </div>
-              <div className="energy-panel">
-                <span>Energia</span>
-                <strong>{playerEnergy.toFixed(1)} / 10</strong>
-              </div>
-            </div>
-            <div className="energy-track"><i style={{ width: `${(playerEnergy / ENERGY_MAX) * 100}%` }} /></div>
-            <div className="cards-grid">
-              {liveCards.map((card) => {
-                const playable = playerEnergy >= card.cost && battleState === 'running'
-                return (
-                  <button className={`deck-card ${selectedCardId === card.id ? 'deck-card-active' : ''} ${playable ? '' : 'deck-card-disabled'}`} key={card.id} onClick={() => setSelectedCardId(card.id)} type="button">
-                    <div className="deck-card-top">
-                      <span className="cost-orb">{card.cost}</span>
-                      <span className="tag">{card.type === 'unit' ? 'Unidad' : 'Hechizo'}</span>
-                    </div>
-                    <h3>{card.title}</h3>
-                    <p>{card.description}</p>
-                  </button>
-                )
-              })}
-            </div>
-          </section>
+          <div className="feature-strip">
+            <article>
+              <strong>Multijugador</strong>
+              <p>Lo dejaremos preparado, pero por ahora entra al modo práctica contra bot.</p>
+            </article>
+            <article>
+              <strong>Tienda</strong>
+              <p>Compra cartas originales con oro para ampliar tu colección.</p>
+            </article>
+            <article>
+              <strong>Mazos</strong>
+              <p>Puedes modificar tus 8 huecos del mazo desde la pantalla principal.</p>
+            </article>
+          </div>
+        </section>
 
-          <section className="log-panel">
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">Battle Log</p>
-                <h2>Evento a evento</h2>
-              </div>
-            </div>
-            <div className="log-list">
-              {battleLog.map((entry, index) => <article key={`${entry}-${index}`}>{entry}</article>)}
-            </div>
-          </section>
+        <aside className="panel shop-panel">
+          <div className="section-title">
+            <span>Tienda</span>
+            <strong>Ofertas del dia</strong>
+          </div>
 
-          <section className="needs-panel">
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">Siguiente fase</p>
-                <h2>Lo que todavia hace falta</h2>
+          {activeShopCard ? (
+            <div className="shop-card-large">
+              <div className="shop-art" style={{ background: activeShopCard.color }} />
+              <h3>{activeShopCard.name}</h3>
+              <p>{activeShopCard.flavor}</p>
+              <div className="shop-meta">
+                <span>{activeShopCard.rarity}</span>
+                <strong>{activeShopCard.price} oro</strong>
               </div>
+              <button className="buy-button" onClick={buyCard} type="button">
+                Comprar
+              </button>
             </div>
-            <ul className="needs-list">
-              <li>Backend real para cuentas, progreso, matchmaking y datos persistentes.</li>
-              <li>Servidor autoritativo para PvP online y anti-cheat.</li>
-              <li>Arte, UI polish, audio y efectos propios con identidad original.</li>
-              <li>Balanceo serio de cartas, economia y progresion.</li>
-              <li>Sistema de tutorial, recompensas, tienda y coleccion.</li>
-            </ul>
-          </section>
+          ) : (
+            <div className="shop-empty">
+              <strong>Tienes todas las cartas de esta demo.</strong>
+              <p>La siguiente fase será meter progreso, cofres y rotación diaria real.</p>
+            </div>
+          )}
+
+          <div className="shop-list">
+            {shopCards.map((card, index) => (
+              <button
+                className={`shop-row ${shopIndex === index ? 'shop-row-active' : ''}`}
+                key={card.id}
+                onClick={() => setShopIndex(index)}
+                type="button"
+              >
+                <span>{card.name}</span>
+                <strong>{card.price}</strong>
+              </button>
+            ))}
+          </div>
         </aside>
       </section>
     </main>
