@@ -300,7 +300,7 @@ export default function HomePage() {
           const enemyTowers = towersRef.current
             .filter((tower) => tower.side !== unit.side && (tower.lane === unit.lane || tower.lane === null) && tower.hp > 0)
             .sort((a, b) => {
-              const ay = tower.side === 'player' ? 84 : 16
+              const ay = a.side === 'player' ? 84 : 16
               const by = b.side === 'player' ? 84 : 16
               return Math.abs(ay - unit.y) - Math.abs(by - unit.y)
             })
