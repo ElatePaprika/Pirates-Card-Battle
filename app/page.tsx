@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -643,7 +643,7 @@ export default function HomePage() {
                   <div className="card-frame"><CardArt card={card} battle /></div>
                   <strong>{card.name}</strong>
                   <span className="hand-role">{card.battleRole}</span>
-                  <span className="hand-meta">{getPatternLabel(card.attackPattern)} � {getTargetLabel(card.attackTarget)}</span>
+                  <span className="hand-meta">{getPatternLabel(card.attackPattern)} · {getTargetLabel(card.attackTarget)}</span>
                 </button>
               ))}
             </div>
@@ -711,6 +711,7 @@ export default function HomePage() {
     </main>
   )
 }
+
 
 
 

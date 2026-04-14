@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg-top: #a8deff;
   --bg-mid: #1b5ca2;
   --bg-deep: #091a3b;
@@ -551,3 +551,4 @@ button { border: 0; color: inherit; }
   .hand-card { min-height: 126px; padding: 6px 4px; }
   .battle-stage, .battle-bottom { padding: 8px; }
 }
+
