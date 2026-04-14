@@ -374,6 +374,8 @@ export default function HomePage() {
         ? [{ dx: -3.1, dy: 0.8 }, { dx: 0, dy: -1.6 }, { dx: 3.1, dy: 0.8 }]
         : [{ dx: 0, dy: 0 }]
 
+    const attackFx: Unit['attackFx'] = card.projectile ?? 'melee'
+
     setUnits((current) => [
       ...current,
       ...formation.map((offset, index) => ({
@@ -401,7 +403,7 @@ export default function HomePage() {
         role: card.role,
         tone: card.art.tone,
         size: card.art.size,
-        attackFx: card.projectile ?? 'melee',
+        attackFx,
       })),
     ])
     unitIdRef.current += formation.length
