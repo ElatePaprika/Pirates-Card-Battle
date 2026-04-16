@@ -1,28 +1,45 @@
-# Pirates Card Battle
+# 🏴‍☠️ Pirates-Card-Battle
 
-Prototipo original de juego de arena y cartas en tiempo real con tematica pirata.
+## 📌 Descripción
+**Pirates-Card-Battle** es un proyecto de videojuego inspirado en la jugabilidad de *Clash Royale*, ambientado en un mundo pirata influenciado por *One Piece*. Combina estrategia en tiempo real con un sistema de cartas y enfrentamientos competitivos.
 
-## Incluye
+## 🎯 Objetivo
+Desarrollar un juego donde los jugadores puedan:
+- Crear mazos de cartas.
+- Desplegar unidades en tiempo real.
+- Derrotar al rival destruyendo sus torres mediante estrategia.
 
-- Interfaz principal con identidad visual original
-- Combate en navegador con 2 lineas
-- Mazo de 8 cartas
-- Energia con regeneracion y fase de doble energia
-- Unidades cuerpo a cuerpo, rango, tanque y hechizos
-- Torres laterales, flagship central y bot rival basico
+## ⚙️ Concepto del Juego
+- Campo dividido en dos lados.
+- Torres defensivas.
+- Sistema de energía para usar cartas.
+- Partidas en tiempo real contra otros jugadores.
 
-## Arranque
+## 🧩 Características principales (planeadas)
+- 🃏 Cartas basadas en personajes piratas
+- ⚔️ Habilidades únicas
+- 🏝️ Arenas temáticas
+- 📈 Sistema de progresión
+- 🌐 Multijugador online
 
-```bash
-npm install
-npm run dev
-```
+## 🚧 Estado del proyecto
+Fase inicial. Actualmente:
+- Definiendo mecánicas principales
+- Diseñando sistema de cartas
+- Creando estructura base del proyecto web
 
-## Siguiente paso recomendado
+## 🛠️ Tecnologías
+- **Frontend / Fullstack**: Aplicación web (JavaScript/TypeScript)
+- **Hosting**: Vercel
+- **Backend**: (por definir)
+- **Base de datos**: (por definir)
+- ❌ No se utiliza motor de juego por el momento
 
-Convertir este prototipo frontend en arquitectura real de juego:
+## 📚 Inspiración
+- *Clash Royale*
+- Juegos de estrategia en tiempo real
+- Sistema de cartas
+- Estética y temática de *One Piece*
 
-- backend de usuario y progreso
-- servidor autoritativo para PvP
-- editor de cartas y balance
-- arte, efectos, sonido y UX de produccion
+## 👨‍💻 Autor
+Elate
